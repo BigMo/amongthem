@@ -187,6 +187,11 @@ class ShellCodeInjector:
         )
         return exitcode.value
 
+    def prepareBuffers(self, code: ShellCode):
+        for _, buffer in code.buffers.items():
+            if not buffer.mapped:
+                buffer.addr = self.alloc(buffer._size_)
+
     def call(self, code: ShellCode, operandValues: Dict[str, Any] = None):
         with self._lock_:  # We don't want multiple threads to fck up the shellcode...
             # Alloc buffers and write them to the func code if necessary

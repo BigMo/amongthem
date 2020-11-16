@@ -1,3 +1,4 @@
+from ctypes import addressof
 import struct
 from struct import unpack
 import x86
@@ -7,268 +8,13 @@ import pymem
 from pymem import Pymem
 from helpers import PointerChain
 from x86 import ShellCode, ShellCodeInjector
+from gametypes import *
+from gamedata import DATA
 
 pPlayerControlStatic = PointerChain([0x144bb70, 0x5c, 0])
 pShipStatusStatic = PointerChain([0x144BB58, 0x5c, 0, 0])
 pGameOptions = PointerChain([0x0144BB70, 0x5c, 4, 0])
 pLocalPos = PointerChain([0x01277F00, 0x20, 0x34, 0x4, 0x40, 0])
-
-DATA = {
-    'OFFSETS': {
-
-    },
-    'STRUCTS': {
-        'PlayerControlStatic': {
-            "pAllPlayerControls": {
-                "offset": 8,
-                "unpack": "I"
-            },
-            "pGameOptions": {
-                "offset": 4,
-                "unpack": "I"
-            },
-            "pLocalPlayer": {
-                "offset": 0,
-                "unpack": "I"
-            }
-        },
-        'PlayerControl': {
-            "Klass": {
-                "offset": 0,
-                "unpack": "i"
-            },
-            "MaxReportDistance": {
-                "offset": 44,
-                "unpack": "f"
-            },
-            "pNetworkTransform": {
-                "offset": 96,
-                "unpack": "i"
-            },
-            "pPlayerData": {
-                "offset": 52,
-                "unpack": "i"
-            },
-            "PlayerId": {
-                "offset": 40,
-                "unpack": "i"
-            },
-            "RemainingEmergencies": {
-                "offset": 72,
-                "unpack": "i"
-            },
-            "inVent": {
-                "offset": 49,
-                "unpack": "?"
-            },
-            "killTimer": {
-                "offset": 68,
-                "unpack": "f"
-            },
-            "moveable": {
-                "offset": 48,
-                "unpack": "?"
-            },
-            "pMyTasks": {
-                "offset": 116,
-                "unpack": "i"
-            }
-        },
-        'PlayerData': {
-            "colorId": {
-                "offset": 16,
-                "unpack": "b"
-            },
-            "isDead": {
-                "offset": 41,
-                "unpack": "?"
-            },
-            "isImpostor": {
-                "offset": 40,
-                "unpack": "?"
-            },
-            "pName": {
-                "offset": 12,
-                "unpack": "i"
-            },
-            "pPlayerControls": {
-                "offset": 44,
-                "unpack": "i"
-            },
-            "playerId": {
-                "offset": 8,
-                "unpack": "i"
-            }
-        },
-        'List': {
-            'pArray': {
-                'offset': 8,
-                'unpack': 'i'
-            },
-            'size': {
-                'offset': 12,
-                'unpack': 'i'
-            }
-        },
-        'Array': {
-            'max_length': {
-                'offset': 12,
-                'unpack': 'i'
-            },
-            'pItems': {
-                'offset': 16,
-                'unpack': 'i'
-            }
-        },
-        'String': {
-            "chars": {
-                "offset": 12,
-                "unpack": "i"
-            },
-            "length": {
-                "offset": 8,
-                "unpack": "i"
-            }
-        },
-        'CustomNetworkTransform': {
-            "LastSequenceId": {
-                "offset": 76,
-                "unpack": "i"
-            },
-            "PrevPosSend": {
-                "offset": 80,
-                "type": "Vector2"
-            },
-            "PrevVelSend": {
-                "offset": 88,
-                "type": "Vector2"
-            },
-            "TargetSyncPos": {
-                "offset": 60,
-                "type": "Vector2"
-            },
-            "TargetSyncVel": {
-                "offset": 68,
-                "type": "Vector2"
-            }
-        },
-        'Vector2': {
-            'X': {
-                'offset': 0,
-                'unpack': 'f'
-            },
-            'Y': {
-                'offset': 4,
-                'unpack': 'f'
-            }
-        },
-        'ShipStatus': {
-            "EmergencyCooldown": {
-                "offset": 208,
-                "unpack": "f"
-            },
-            "InitialSpawnCenter": {
-                "offset": 72,
-                "type": "Vector2"
-            },
-            "MapScale": {
-                "offset": 60,
-                "unpack": "f"
-            },
-            "MapType": {
-                "offset": 212,
-                "unpack": "i"
-            },
-            "MeetingSpawnCenter": {
-                "offset": 80,
-                "type": "Vector2"
-            },
-            "MeetingSpawnCenter2": {
-                "offset": 88,
-                "type": "Vector2"
-            },
-            "Timer": {
-                "offset": 204,
-                "unpack": "f"
-            }
-        },
-        'GameOptions': {
-            "Speed": {
-                "offset": 20,
-                "unpack": "f"
-            },
-        },
-        'LocalPos': {
-            "Pos": {
-                "offset": 236,
-                "type": "Vector2"
-            }
-        },
-        'Task': {
-            "HasLocation": {
-                "offset": 36,
-                "unpack": "?"
-            },
-            "LocationDirty": {
-                "offset": 37,
-                "unpack": "?"
-            },
-            "MaxStep": {
-                "offset": 44,
-                "unpack": "i"
-            },
-            "TaskId": {
-                "offset": 16,
-                "unpack": "i"
-            },
-            "ShowTaskStep": {
-                "offset": 48,
-                "unpack": "?"
-            },
-            "ShowTaskTimer": {
-                "offset": 49,
-                "unpack": "?"
-            },
-            "StartAt": {
-                "offset": 24,
-                "unpack": "i"
-            },
-            "TaskTimer": {
-                "offset": 56,
-                "unpack": "f"
-            },
-            "TaskType": {
-                "offset": 28,
-                "unpack": "i"
-            },
-            "TimerStarted": {
-                "offset": 52,
-                "unpack": "i"
-            },
-            "taskStep": {
-                "offset": 40,
-                "unpack": "i"
-            }
-        }
-    }
-}
-
-CALL_RPC_COMPLETE_TASK_PAYLOAD: bytes = bytes(
-    [0x6A, 0x00, 0x6A, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0x00])
-RPC_COMPLETE_TASK_OFFSET = 0x622A70
-RPC_SET_HAT = 0x622F60
-RPC_SET_PET = 0x6231F0
-RPC_SET_SKIN = 0x623380
-SET_COLOR = 0x6236D0
-COMPONENT_GET_TRANSFORM = 0x464A10
-COMPONENT_GET_GAMEOBJECT = 0x464980
-TRANSFORM_GET_POSITION = 0x4477D0
-TRANFORM_SET_POSITION = 0x447C80
-GAMEOBJECT_GET_LAYER = 0x466E00
-GAMEOBJECT_SET_LAYER = 0x466E90
-PLAYERCONTROL_REVIVE = 0x622880
-LAYER_PLAYER = 8
-LAYER_GHOST = 14
 
 
 def calcTypeSize(_type: Dict[str, Any]) -> int:
@@ -388,278 +134,10 @@ def readType(pm: Pymem, addr: int, _type: Dict[str, Any]):
     #    return None
 
 
-class IVector2:
-    @property
-    def X(self) -> float:
-        pass
-
-    @property
-    def Y(self) -> float:
-        pass
-
-
-class ICustomNetworkTransform:
-    @property
-    def TargetSyncPos(self) -> IVector2:
-        pass
-
-    @property
-    def TargetSyncVel(self) -> IVector2:
-        pass
-
-    @property
-    def LastSequenceId(self) -> int:
-        pass
-
-    @property
-    def PrevPosSend(self) -> IVector2:
-        pass
-
-    @property
-    def PrevVelSend(self) -> IVector2:
-        pass
-
-
-class IPlayerControlStatic:
-    @property
-    def pLocalPlayer(self) -> int:
-        pass
-
-    @property
-    def pGameOptions(self) -> int:
-        pass
-
-    @property
-    def pAllPlayerControls(self) -> int:
-        pass
-
-
-class IList:
-    @property
-    def pArray(self) -> int:
-        pass
-
-    @property
-    def size(self) -> int:
-        pass
-
-
-class IArray:
-    @property
-    def max_length(self) -> int:
-        pass
-
-    @property
-    def pItems(self) -> int:
-        pass
-
-
-class IString:
-    @property
-    def length(self) -> int:
-        pass
-
-    @property
-    def chars(self) -> int:
-        pass
-
-
-class IPlayerControl:
-    @property
-    def Klass(self) -> int:
-        pass
-
-    @property
-    def BNHPKAJEEKJ(self) -> int:
-        pass
-
-    @property
-    def PlayerId(self) -> int:
-        pass
-
-    @property
-    def MaxReportDistance(self) -> float:
-        pass
-
-    @property
-    def moveable(self) -> bool:
-        pass
-
-    @property
-    def inVent(self) -> bool:
-        pass
-
-    @property
-    def pPlayerData(self) -> int:
-        pass
-
-    @property
-    def killTimer(self) -> float:
-        pass
-
-    @property
-    def RemainingEmergencies(self) -> int:
-        pass
-
-    @property
-    def pNetworkTransform(self) -> int:
-        pass
-
-    @property
-    def pMyTasks(self) -> int:
-        pass
-
-
-class IPlayerData:
-    @property
-    def playerId(self) -> int:
-        pass
-
-    @property
-    def pName(self) -> int:
-        pass
-
-    @property
-    def colorId(self) -> int:
-        pass
-
-    @property
-    def isImpostor(self) -> bool:
-        pass
-
-    @property
-    def isDead(self) -> bool:
-        pass
-
-    @property
-    def pPlayerControls(self) -> int:
-        pass
-
-
-class ITask:
-    @property
-    def StartAt(self) -> int:
-        pass
-
-    @property
-    def TaskType(self) -> int:
-        pass
-
-    @property
-    def TaskId(self) -> int:
-        pass
-
-    @property
-    def HasLocation(self) -> bool:
-        pass
-
-    @property
-    def LocationDirty(self) -> bool:
-        pass
-
-    @property
-    def taskStep(self) -> int:
-        pass
-
-    @property
-    def MaxStep(self) -> int:
-        pass
-
-    @property
-    def ShowTaskStep(self) -> bool:
-        pass
-
-    @property
-    def ShowTaskTimer(self) -> bool:
-        pass
-
-    @property
-    def TimerStarted(self) -> int:
-        pass
-
-    @property
-    def TaskTimer(self) -> float:
-        pass
-
-
-class IFullPlayerControl(IPlayerControl):
-    @property
-    def Name(self) -> str:
-        pass
-
-    @property
-    def PlayerData(self) -> IPlayerData:
-        pass
-
-    @property
-    def NetworkTransform(self) -> ICustomNetworkTransform:
-        pass
-
-    @property
-    def Tasks(self) -> Sequence[ITask]:
-        pass
-
-
-class IShipStatus:
-    @property
-    def MapScale(self) -> float:
-        pass
-
-    @property
-    def InitialSpawnCenter(self) -> IVector2:
-        pass
-
-    @property
-    def MeetingSpawnCenter(self) -> IVector2:
-        pass
-
-    @property
-    def MeetingSpawnCenter2(self) -> IVector2:
-        pass
-
-    @property
-    def Timer(self) -> float:
-        pass
-
-    @property
-    def EmergencyCooldown(self) -> float:
-        pass
-
-    @property
-    def MapType(self) -> int:
-        pass
-
-
-class IGameOptions:
-    @property
-    def Speed(self) -> float:
-        pass
-
-
-class ILocalPos:
-    @property
-    def Pos(self) -> IVector2:
-        pass
-
-
-class StaticVector:
-    def __init__(self, x, y):
-        self._x_ = x
-        self._y_ = y
-
-    @ property
-    def X(self) -> float:
-        return self._x_
-
-    @ property
-    def Y(self) -> float:
-        return self._y_
-
-
-fn_GameObject_get_layer: ShellCode = x86.Assembler()\
+_fn_GameObject_get_Layer: ShellCode = x86.Assembler()\
     .pushInt8(0)\
     .pushInt32Operand('pGameObject')\
-    .movInt32ToEaxOperand('pGameObjectGetLayer')\
+    .movInt32ToEaxOperand('pGameObject_get_Layer')\
     .callEax()\
     .addInt8ToEsp(0x8)\
     .movEaxToAddrOperand('pTargetBuffer')\
@@ -667,16 +145,139 @@ fn_GameObject_get_layer: ShellCode = x86.Assembler()\
     .assemble()\
     .addBuffer('pTargetBuffer', 4)
 
-fn_Component_get_GameObject: ShellCode = x86.Assembler()\
+_fn_Component_get_GameObject: ShellCode = x86.Assembler()\
     .pushInt8(0)\
     .pushInt32Operand('pComponent')\
-    .movInt32ToEaxOperand('pComponentGetGameObject')\
+    .movInt32ToEaxOperand('pComponent_get_GameObject')\
     .callEax()\
     .addInt8ToEsp(0x8)\
     .movEaxToAddrOperand('pTargetBuffer')\
     .ret()\
     .assemble()\
     .addBuffer('pTargetBuffer', 4)
+
+_fn_PlayerControl_RpcSetHat: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt8Operand('hatId')\
+    .pushInt32Operand('pPlayerControl')\
+    .movInt32ToEaxOperand('pPlayerControl_RpcSetHat')\
+    .callEax()\
+    .addInt8ToEsp(0x0c)\
+    .ret()\
+    .assemble()
+
+_fn_PlayerControl_RpcSetPet: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt8Operand('petId')\
+    .pushInt32Operand('pPlayerControl')\
+    .movInt32ToEaxOperand('pPlayerControl_RpcSetPet')\
+    .callEax()\
+    .addInt8ToEsp(0x0c)\
+    .ret()\
+    .assemble()
+
+_fn_PlayerControl_RpcSetSkin: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt8Operand('skinId')\
+    .pushInt32Operand('pPlayerControl')\
+    .movInt32ToEaxOperand('pPlayerControl_RpcSetSkin')\
+    .callEax()\
+    .addInt8ToEsp(0x0c)\
+    .ret()\
+    .assemble()
+
+_fn_PlayerControl_RpcCompleteTask: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt8Operand('taskId')\
+    .pushInt32Operand('pPlayerControl')\
+    .movInt32ToEaxOperand('pPlayerControl_RpcCompleteTask')\
+    .callEax()\
+    .addInt8ToEsp(0x0c)\
+    .ret()\
+    .assemble()
+
+_fn_Component_get_Position: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt32Operand('pComponent')\
+    .movInt32ToEaxOperand('pComponent_get_Transform')\
+    .callEax()\
+    .addInt8ToEsp(0x8)\
+    .pushInt8(0)\
+    .pushEax()\
+    .pushInt32Operand('pTargetBuffer')\
+    .movInt32ToEaxOperand('pTransform_get_Position')\
+    .callEax()\
+    .addInt8ToEsp(0xC)\
+    .ret()\
+    .assemble()\
+    .addBuffer('pTargetBuffer', 12)
+
+_fn_Component_set_Position: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt32Operand('pComponent')\
+    .movInt32ToEaxOperand('pComponent_get_Transform')\
+    .callEax()\
+    .addInt8ToEsp(0x8)\
+    .movqQwordPtrInt32ToXmm0Operand('pNewPosition')\
+    .pushInt8(0)\
+    .subInt8FromEsp(0xC)\
+    .movEspToEcx()\
+    .pushEax()\
+    .movqXmm0ToQwordPtrEcx()\
+    .movEsiToDwordPtrEcx8()\
+    .movInt32ToEaxOperand('pTransform_set_Position')\
+    .callEax()\
+    .addInt8ToEsp(0x14)\
+    .ret()\
+    .assemble()\
+    .addBuffer('pNewPosition', 12)
+
+_fn_Component_get_Transform: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt32Operand('pComponent')\
+    .movInt32ToEaxOperand('pComponent_get_Transform')\
+    .callEax()\
+    .addInt8ToEsp(0x8)\
+    .movEaxToAddrOperand('pTargetBuffer')\
+    .ret()\
+    .assemble()\
+    .addBuffer('pTargetBuffer', 12)
+
+_fn_GameObject_set_Layer: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt32Operand('layer')\
+    .pushInt32Operand('pGameObject')\
+    .movInt32ToEaxOperand('pGameObject_set_Layer')\
+    .callEax()\
+    .addInt8ToEsp(0xC)\
+    .ret()\
+    .assemble()
+
+_fn_Transform_get_Position: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt32Operand('pTransform')\
+    .pushInt32('pTargetBuffer')\
+    .movInt32ToEaxOperand('pTransform_get_Position')\
+    .callEax()\
+    .addInt8ToEsp(0xC)\
+    .ret()\
+    .assemble()\
+    .addBuffer('pTargetBuffer', 12)
+
+_fn_Transform_set_Position: ShellCode = x86.Assembler()\
+    .movqQwordPtrInt32ToXmm0Operand('pNewPosition')\
+    .pushInt8(0)\
+    .subInt8FromEsp(0xC)\
+    .movEspToEcx()\
+    .pushEax()\
+    .movqXmm0ToQwordPtrEcx()\
+    .movEsiToDwordPtrEcx8()\
+    .movInt32ToEaxOperand('pTransform_set_Position')\
+    .callEax()\
+    .addInt8ToEsp(0x14)\
+    .ret()\
+    .assemble()\
+    .addBuffer('pNewPosition', 12)
 
 
 class Game:
@@ -729,6 +330,19 @@ class Game:
             try:
                 self._pm_ = Pymem('Among Us.exe')
                 self._injector_ = ShellCodeInjector(self._pm_)
+                self._injector_.prepareBuffers(_fn_Component_get_GameObject)
+                self._injector_.prepareBuffers(_fn_Component_get_Position)
+                self._injector_.prepareBuffers(_fn_Component_get_Transform)
+                self._injector_.prepareBuffers(_fn_Component_set_Position)
+                self._injector_.prepareBuffers(_fn_GameObject_get_Layer)
+                self._injector_.prepareBuffers(_fn_GameObject_set_Layer)
+                self._injector_.prepareBuffers(
+                    _fn_PlayerControl_RpcCompleteTask)
+                self._injector_.prepareBuffers(_fn_PlayerControl_RpcSetHat)
+                self._injector_.prepareBuffers(_fn_PlayerControl_RpcSetPet)
+                self._injector_.prepareBuffers(_fn_PlayerControl_RpcSetSkin)
+                self._injector_.prepareBuffers(_fn_Transform_get_Position)
+                self._injector_.prepareBuffers(_fn_Transform_set_Position)
             except:
                 return False
         if self._gameAssemblyBase_ == 0:
@@ -769,219 +383,114 @@ class Game:
 
         return True
 
-    def setColor(self, colorId: int) -> None:
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt8(colorId)\
-            .pushInt32(self._localPlayer_._addr)\
-            .movInt32ToEax(self._gameAssemblyBase_ + SET_COLOR)\
-            .callEax()\
-            .addInt8ToEsp(0x0c)\
-            .ret()\
-            .assemble()
-        print(' '.join([format(i, 'x') for i in code]))
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
-
     def rpcSetHat(self, hatId: int) -> None:
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt8(hatId)\
-            .pushInt32(self._localPlayer_._addr)\
-            .movInt32ToEax(self._gameAssemblyBase_ + RPC_SET_HAT)\
-            .callEax()\
-            .addInt8ToEsp(0x0c)\
-            .ret()\
-            .assemble()
-        print(' '.join([format(i, 'x') for i in code]))
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
-
-    # def revive(self, pPlayer: int) -> None:
-    #     code = x86.Assembler()\
-    #         .pushInt8(0)\
-    #         .pushInt32(pPlayer)\
-    #         .movInt32ToEax(self._gameAssemblyBase_ + PLAYERCONTROL_REVIVE)\
-    #         .callEax()\
-    #         .addInt8ToEsp(0x08)\
-    #         .ret()\
-    #         .assemble()
-    #     ShellcodeInjector.execute(self._pm_.process_handle, code)
+        global _fn_PlayerControl_RpcSetHat
+        self._injector_.call(_fn_PlayerControl_RpcSetHat, {
+            'hatId': hatId,
+            'pPlayerControl': self._localPlayer_._addr,
+            'pPlayerControl_RpcSetHat': self._gameAssemblyBase_ + DATA['OFFSETS']['PlayerControl_RpcSetHat']
+        })
 
     def rpcSetPet(self, petId: int) -> None:
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt8(petId)\
-            .pushInt32(self._localPlayer_._addr)\
-            .movInt32ToEax(self._gameAssemblyBase_ + RPC_SET_PET)\
-            .callEax()\
-            .addInt8ToEsp(0x0c)\
-            .ret()\
-            .assemble()
-        print(' '.join([format(i, 'x') for i in code]))
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
+        global _fn_PlayerControl_RpcSetPet
+        self._injector_.call(_fn_PlayerControl_RpcSetPet, {
+            'petId': petId,
+            'pPlayerControl': self._localPlayer_._addr,
+            'pPlayerControl_RpcSetPet': self._gameAssemblyBase_ + DATA['OFFSETS']['PlayerControl_RpcSetPet']
+        })
 
     def rpcSetSkin(self, skinId: int) -> None:
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt8(skinId)\
-            .pushInt32(self._localPlayer_._addr)\
-            .movInt32ToEax(self._gameAssemblyBase_ + RPC_SET_SKIN)\
-            .callEax()\
-            .addInt8ToEsp(0x0c)\
-            .ret()\
-            .assemble()
-        print(' '.join([format(i, 'x') for i in code]))
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
+        global _fn_PlayerControl_RpcSetSkin
+        self._injector_.call(_fn_PlayerControl_RpcSetSkin, {
+            'skinId': skinId,
+            'pPlayerControl': self._localPlayer_._addr,
+            'pPlayerControl_RpcSetSkin': self._gameAssemblyBase_ + DATA['OFFSETS']['PlayerControl_RpcSetSkin']
+        })
 
     def rpcCompleteTask(self, task: ITask) -> None:
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt8(task.TaskId)\
-            .pushInt32(self._localPlayer_._addr)\
-            .movInt32ToEax(self._gameAssemblyBase_ + RPC_COMPLETE_TASK_OFFSET)\
-            .callEax()\
-            .addInt8ToEsp(0x0c)\
-            .ret()\
-            .assemble()
-        print(' '.join([format(i, 'x') for i in code]))
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
+        global _fn_PlayerControl_RpcCompleteTask
+        self._injector_.call(_fn_PlayerControl_RpcCompleteTask, {
+            'taskId': task.TaskId,
+            'pPlayerControl': self._localPlayer_._addr,
+            'pPlayerControl_RpcCompleteTask': self._gameAssemblyBase_ + DATA['OFFSETS']['PlayerControl_RpcCompleteTask']
+        })
 
     def getComponentPosition(self, pComponent: int) -> StaticVector:
-        _resAddr = ShellCodeInjector.alloc(self._pm_.process_handle, 12)
-
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt32(pComponent)\
-            .movInt32ToEax(self._gameAssemblyBase_ + COMPONENT_GET_TRANSFORM)\
-            .callEax()\
-            .addInt8ToEsp(0x8)\
-            .pushInt8(0)\
-            .pushEax()\
-            .pushInt32(_resAddr)\
-            .movInt32ToEax(self._gameAssemblyBase_ + TRANSFORM_GET_POSITION)\
-            .callEax()\
-            .addInt8ToEsp(0xC)\
-            .ret()\
-            .assemble()
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
-        vec: IVector2 = readType(
-            self._pm_, _resAddr, DATA['STRUCTS']['Vector2'])
-        result = StaticVector(vec.X, vec.Y)
-
-        ShellCodeInjector.free(self._pm_.process_handle, _resAddr, 12)
+        global _fn_Component_get_Position
+        self._injector_.call(_fn_Component_get_Position, {
+            'pComponent': pComponent,
+            'pComponent_get_Transform': self._gameAssemblyBase_ + DATA['OFFSETS']['Component_get_Transform'],
+            'pTransform_get_Position': self._gameAssemblyBase_ + DATA['OFFSETS']['Transform_get_Position']
+        })
+        result = readType(self._pm_, _fn_Component_get_Position.buffers['pTargetBuffer'].addr,
+                          DATA['STRUCTS']['Vector2'])
         return result
 
     def setComponentPosition(self, pComponent: int, pos: StaticVector):
-        _buffer = ShellCodeInjector.alloc(self._pm_.process_handle, 12)
-        self._pm_.write_float(_buffer, pos.X)
-        self._pm_.write_float(_buffer + 4, pos.Y)
+        global _fn_Component_set_Position
+        _newPosAddr = _fn_Component_set_Position.buffers['pNewPos'].addr
+        self._pm_.write_float(_newPosAddr, pos.X)
+        self._pm_.write_float(_newPosAddr + 4, pos.Y)
 
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt32(pComponent)\
-            .movInt32ToEax(self._gameAssemblyBase_ + COMPONENT_GET_TRANSFORM)\
-            .callEax()\
-            .addInt8ToEsp(0x8)\
-            .movqQwordPtrInt32ToXmm0(_buffer)\
-            .pushInt8(0)\
-            .subInt8FromEsp(0xC)\
-            .movEspToEcx()\
-            .pushEax()\
-            .movqXmm0ToQwordPtrEcx()\
-            .movEsiToDwordPtrEcx8()\
-            .movInt32ToEax(self._gameAssemblyBase_+TRANFORM_SET_POSITION)\
-            .callEax()\
-            .addInt8ToEsp(0x14)\
-            .ret()\
-            .assemble()
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
-
-        ShellCodeInjector.free(self._pm_.process_handle, _buffer, 4)
+        self._injector_.call(_fn_Component_set_Position, {
+            'pComponent': pComponent,
+            'pComponent_get_Transform': self._gameAssemblyBase_ + DATA['OFFSETS']['Component_get_Transform'],
+            'pTransform_set_Position': self._gameAssemblyBase_ + DATA['OFFSETS']['Transform_set_Position']
+        })
 
     def getTransform(self, pComponent: int) -> int:
-        _resAddr = ShellCodeInjector.alloc(self._pm_.process_handle, 4)
-
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt32(pComponent)\
-            .movInt32ToEax(self._gameAssemblyBase_ + COMPONENT_GET_TRANSFORM)\
-            .callEax()\
-            .addInt8ToEsp(0x8)\
-            .movEaxToAddr(_resAddr)\
-            .ret()\
-            .assemble()
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
-
-        result = self._pm_.read_int(_resAddr)
-        ShellCodeInjector.free(self._pm_.process_handle, _resAddr, 4)
-        return result
+        global _fn_Component_get_Transform
+        self._injector_.call(_fn_Component_get_Transform, {
+            'pComponent': pComponent,
+            'pComponent_get_Transform': self._gameAssemblyBase_ + DATA['OFFSETS']['Component_get_Transform']
+        })
+        return self._pm_.read_int(_fn_Component_get_Transform.buffers['pTargetBuffer'].addr)
 
     def getGameObject(self, pComponent: int) -> int:
-        global fn_Component_get_GameObject
-        self._injector_.call(fn_Component_get_GameObject, {
+        global _fn_Component_get_GameObject
+        self._injector_.call(_fn_Component_get_GameObject, {
             'pComponent': pComponent,
-            'pComponentGetGameObject': self._gameAssemblyBase_ + COMPONENT_GET_GAMEOBJECT
+            'pComponent_get_GameObject': self._gameAssemblyBase_ + DATA['OFFSETS']['Component_get_GameObject']
         })
-        return self._pm_.read_int(fn_Component_get_GameObject.buffers['pTargetBuffer'].addr)
+        return self._pm_.read_int(_fn_Component_get_GameObject.buffers['pTargetBuffer'].addr)
 
     def getGameObjectLayer(self, pGameObject: int) -> int:
-        global fn_GameObject_get_layer
-        self._injector_.call(fn_GameObject_get_layer, {
+        global _fn_GameObject_get_Layer
+        self._injector_.call(_fn_GameObject_get_Layer, {
             'pGameObject': pGameObject,
-            'pGameObjectGetLayer': self._gameAssemblyBase_ + GAMEOBJECT_GET_LAYER
+            'pGameObject_get_Layer': self._gameAssemblyBase_ + DATA['OFFSETS']['GameObject_get_Layer']
         })
-        return self._pm_.read_int(fn_GameObject_get_layer.buffers['pTargetBuffer'].addr)
+        return self._pm_.read_int(_fn_GameObject_get_Layer.buffers['pTargetBuffer'].addr)
 
     def setGameObjectLayer(self, pGameObject: int, layer: int) -> None:
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt32(layer)\
-            .pushInt32(pGameObject)\
-            .movInt32ToEax(self._gameAssemblyBase_ + GAMEOBJECT_SET_LAYER)\
-            .callEax()\
-            .addInt8ToEsp(0xC)\
-            .ret()\
-            .assemble()
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
+        global _fn_GameObject_set_Layer
+        self._injector_.call(_fn_GameObject_set_Layer, {
+            'layer': layer,
+            'pGameObject': pGameObject,
+            'pGameObject_set_Layer': self._gameAssemblyBase_ + DATA['OFFSETS']['GameObject_set_Layer']
+        })
 
     def getTransformPosition(self, pTransform: int) -> IVector2:
-        _resAddr = ShellCodeInjector.alloc(self._pm_.process_handle, 12)
 
-        code = x86.Assembler()\
-            .pushInt8(0)\
-            .pushInt32(pTransform)\
-            .pushInt32(_resAddr)\
-            .movInt32ToEax(self._gameAssemblyBase_ + TRANSFORM_GET_POSITION)\
-            .callEax()\
-            .addInt8ToEsp(0xC)\
-            .ret()\
-            .assemble()
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
-        result = readType(self._pm_, _resAddr, DATA['STRUCTS']['Vector2'])
-
-        ShellCodeInjector.free(self._pm_.process_handle, _resAddr, 4)
+        global _fn_Transform_get_Position
+        self._injector_.call(_fn_Transform_get_Position, {
+            'pTransform': pTransform,
+            'pTransform_get_Position': self._gameAssemblyBase_ + DATA['OFFSETS']['Transform_get_Position']
+        })
+        result = readType(self._pm_, _fn_Component_get_Position.buffers['pTargetBuffer'].addr,
+                          DATA['STRUCTS']['Vector2'])
         return result
 
     def setTransformPosition(self, pTransform: int, pos: IVector2):
-        _buffer = ShellCodeInjector.alloc(self._pm_.process_handle, 12)
-        self._pm_.write_float(_buffer, pos.X)
-        self._pm_.write_float(_buffer + 4, pos.Y)
+        global _fn_Transform_set_Position
+        _newPosAddr = _fn_Transform_set_Position.buffers['pNewPos'].addr
+        self._pm_.write_float(_newPosAddr, pos.X)
+        self._pm_.write_float(_newPosAddr + 4, pos.Y)
 
-        code = x86.Assembler()\
-            .movqQwordPtrInt32ToXmm0(_buffer)\
-            .pushInt8(0)\
-            .subInt8FromEsp(0xC)\
-            .movEspToEcx()\
-            .pushInt32(pTransform)\
-            .movqXmm0ToQwordPtrEcx()\
-            .movEsiToDwordPtrEcx8()\
-            .movInt32ToEax(self._gameAssemblyBase_+TRANFORM_SET_POSITION)\
-            .callEax()\
-            .addInt8ToEsp(0x14)\
-            .ret()\
-            .assemble()
-        ShellCodeInjector.executeOld(self._pm_.process_handle, code)
-
-        ShellCodeInjector.free(self._pm_.process_handle, _buffer, 4)
+        self._injector_.call(_fn_Transform_set_Position, {
+            'pTransform': pTransform,
+            'pTransform_set_Position': self._gameAssemblyBase_ + DATA['OFFSETS']['Transform_set_Position']
+        })
 
     def _getPlayerControl_(self, addr: int) -> IPlayerControl:
         return readType(self._pm_, addr, DATA['STRUCTS']['PlayerControl'])

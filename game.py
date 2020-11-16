@@ -525,6 +525,7 @@ class Game:
             _player.pNetworkTransform)
         _player['Tasks'] = self._getList_(
             _player.pMyTasks, DATA['STRUCTS']['Task'])
+        _player['Position'] = self.getComponentPosition(_player._addr)
         return _player
 
     def _getString_(self, addr: int) -> str:

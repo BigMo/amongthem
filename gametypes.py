@@ -3,6 +3,20 @@
 from typing import Sequence
 
 
+class StaticVector:
+    def __init__(self, x, y):
+        self._x_ = x
+        self._y_ = y
+
+    @ property
+    def X(self) -> float:
+        return self._x_
+
+    @ property
+    def Y(self) -> float:
+        return self._y_
+
+
 class IVector2:
     @property
     def X(self) -> float:
@@ -214,6 +228,10 @@ class IFullPlayerControl(IPlayerControl):
     def Tasks(self) -> Sequence[ITask]:
         pass
 
+    @property
+    def Position(self) -> StaticVector:
+        pass
+
 
 class IShipStatus:
     @property
@@ -259,20 +277,6 @@ class ILocalPos:
     @property
     def Pos(self) -> IVector2:
         pass
-
-
-class StaticVector:
-    def __init__(self, x, y):
-        self._x_ = x
-        self._y_ = y
-
-    @ property
-    def X(self) -> float:
-        return self._x_
-
-    @ property
-    def Y(self) -> float:
-        return self._y_
 
 
 class IPlainRoom:

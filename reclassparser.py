@@ -69,21 +69,9 @@ def %NAME%(self) -> %TYPE%:
     return (fields, properties)
 
 
-lines = """	char pad_0000[24]; //0x0000
-	ELocation StartAt; //0x0018
-	ETaskType TaskType; //0x001C
-	char pad_0020[4]; //0x0020
-	bool HasLocation; //0x0024
-	bool LocationDirty; //0x0025
-	char pad_0026[2]; //0x0026
-	int32_t taskStep; //0x0028
-	int32_t MaxStep; //0x002C
-	bool ShowTaskStep; //0x0030
-	bool ShowTaskTimer; //0x0031
-	char pad_0032[2]; //0x0032
-	ETimerState TimerStarted; //0x0034
-	float TaskTimer; //0x0038
-	char pad_003C[200]; //0x003C
+lines = """	char pad_0000[12]; //0x0000
+	int SystemType; //0x000C
+	char pad_0010[52]; //0x0010
 """
 
 if __name__ == '__main__':

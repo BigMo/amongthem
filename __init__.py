@@ -1,16 +1,19 @@
+from gametypes import IPlainRoom
 import time
 import random
 from typing import Tuple
 from PIL import ImageTk, Image
+from gamedata import DATA
 
 from threading import Thread
 from game import GAME, StaticVector
 from helpers import Hotkeys
 
-from tkinter import Tk, Canvas, W, NW, SW
+from tkinter import Tk, Canvas, W, NW, SW, SE
 
 
-TPTARGET = 0
+TPTARGETPL = 0
+TPTARGETRO = 0
 
 COLORS = ['#c61111', '#132ed2', '#11802d',
           '#ee54bb', '#f07d0d', '#f6f657', '#3f474e', '#d7e1f1', '#6b2fbc', '#71491e', '#38ffdd', '#50f039']
@@ -23,11 +26,11 @@ MAPS = {
     1: {
         'image': None,
         'center': (124 * 0.5, 468 * 0.5),
-        'size': (abs(-10 - 62) * 0.5 , abs(-6.6 - 53) * 0.5)
+        'size': (abs(-10 - 62) * 0.5, abs(-6.6 - 53) * 0.5)
     },
     2: {
         'image': None,
-        'center': (-5 * 0.5 , 0 * 0.5),
+        'center': (-5 * 0.5, 0 * 0.5),
         'size': (abs(0.8 - 82) * 0.5, abs(-54 - 0) * 0.5)
     }
 }
@@ -42,7 +45,11 @@ UI_TEXT = """Hotkeys:
 
 
 def currentTpTarget():
-    return GAME.allPlayers[TPTARGET] if GAME.allPlayers and TPTARGET < len(GAME.allPlayers) else None
+    return GAME.allPlayers[TPTARGETPL] if GAME.allPlayers and TPTARGETPL < len(GAME.allPlayers) else None
+
+
+def currentTpTargetRoom() -> IPlainRoom:
+    return GAME.shipRooms[TPTARGETRO] if GAME.shipRooms and TPTARGETRO < len(GAME.shipRooms) else None
 
 
 def drawmap(_canvas_: Canvas):
@@ -78,22 +85,27 @@ def drawmap(_canvas_: Canvas):
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[p.PlayerData.colorId], width=1)
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
-                                 text=f'{p.Name}\n{"DEAD" if p.PlayerData.isDead else ""}')
+                                     text=f'{p.Name}\n{"DEAD" if p.PlayerData.isDead else ""}')
 
 
 def draw(_canvas_: Canvas):
     _canvas_.delete('all')
     global MAPS
-    global TPTARGET
+    global TPTARGETPL
 
     drawmap(_canvas_)
 
     _canvas_.create_text(5, 5, anchor=NW, font="Arial", text=UI_TEXT)
 
-    _target = currentTpTarget()
-    if _target:
+    _targetPlayer = currentTpTarget()
+    if _targetPlayer:
         _canvas_.create_text(5, _canvas_.winfo_height() - 5, anchor=SW, font='Arial',
-                             text=f'Current TP-Target: {_target.Name}')
+                             text=f'TP-Target: {_targetPlayer.Name}')
+
+    _targetRoom = currentTpTargetRoom()
+    if _targetRoom:
+        _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 5, anchor=SE, font='Arial',
+                             text=f'TP-Target-Room: {DATA["CONSTS"]["SYSTEM_TYPES"][_targetRoom.SystemType]}')
 
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))
@@ -126,18 +138,28 @@ ZERO: StaticVector = StaticVector(0.0, 0.0)
 
 
 def hackerino():
-    global TPTARGET
+    global TPTARGETPL
     global ZERO
     lastprint = time.time()
 
     def cbTpTargetCountUp():
-        global TPTARGET
-        TPTARGET = (TPTARGET + 1) % len(GAME.allPlayers)
+        global TPTARGETPL
+        TPTARGETPL = (TPTARGETPL + 1) % len(GAME.allPlayers)
+
+    def cbTpTargetRoomCountUp():
+        global TPTARGETRO
+        TPTARGETRO = (TPTARGETRO + 1) % len(GAME.shipRooms)
 
     def cbTpToTarget():
         _target = currentTpTarget()
         if _target and GAME.localPlayer:
             _pos = GAME.getComponentPosition(_target._addr)
+            GAME.setComponentPosition(GAME.localPlayer._addr, _pos)
+
+    def cbTpToTargetRoom():
+        _target = currentTpTargetRoom()
+        if _target and GAME.localPlayer:
+            _pos = GAME.getComponentPosition(_target.pRoomArea)
             GAME.setComponentPosition(GAME.localPlayer._addr, _pos)
 
     def setSpeed(speed):
@@ -155,45 +177,16 @@ def hackerino():
         if GAME.localPlayer:
             GAME.localPlayer.PlayerData.isImpostor = 1 if not GAME.localPlayer.PlayerData.isImpostor else 0
 
-    def getPosition():
-        # pTransform = GAME.getTransform(GAME.localPlayer)
-        # pos = GAME.getTransformPosition(pTransform)
-        pos = GAME.getComponentPosition(GAME.localPlayer._addr)
-        print(f'X: {round(pos.X,2)}, Y: {round(pos.Y,2)}')
-
-    def setPosition():
-        # pTransform = GAME.getTransform(GAME.localPlayer)
-        newPos: StaticVector = StaticVector(0.0, 0.0)
-        # pos = GAME.getTransformPosition(pTransform)
-        pos = GAME.getComponentPosition(GAME.localPlayer._addr)
-        print(f'X: {round(pos.X,2)}, Y: {round(pos.Y,2)}')
-
-        GAME.setComponentPosition(GAME.localPlayer._addr, newPos)
-        # GAME.setTransformPosition(pTransform, newPos)
-
-        pos = GAME.getComponentPosition(GAME.localPlayer._addr)
-        # pos = GAME.getTransformPosition(pTransform)
-        print(f'X: {round(pos.X,2)}, Y: {round(pos.Y,2)}')
-
     def cbRandomizePlayer():
         GAME.rpcSetHat(int(random.randrange(0, 93)))
         GAME.rpcSetPet(int(random.randrange(0, 10)))
         GAME.rpcSetSkin(int(random.randrange(0, 10)))
 
-    def cbTestLayer():
+    def cbToggleNoClip():
         _go = GAME.getGameObject(GAME.localPlayer._addr)
-        print(f' > Gameobject of {hex(GAME.localPlayer._addr)} at {hex(_go)}!')
         _layer = GAME.getGameObjectLayer(_go)
-        print(f' > Layer of {hex(_go)}: {_layer}!')
-        # _layer = 14 if _layer == 8 else 8
-        # print(f' > Set layer to {_layer}...')
-        # GAME.setGameObjectLayer(_go, _layer)
-        # _layer = GAME.getGameObjectLayer(_go)
-        # print(f' > Layer of {hex(_go)}: {_layer}!')
-
-    def cbTestRevive():
-        print(f'Attempting revive...')
-        GAME.revive(GAME.localPlayer._addr)
+        _layer = 14 if _layer == 8 else 8
+        GAME.setGameObjectLayer(_go, _layer)
 
     def cbAnonymousMode():
         global ANONYMOUS
@@ -202,13 +195,20 @@ def hackerino():
     _speed = Hotkeys('shift',
                      lambda e: setSpeed(3.0),
                      lambda e: setSpeed(1.0))
+    _speed = Hotkeys('alt',
+                     lambda e: cbToggleNoClip())
     _impostor = Hotkeys('insert',
                         lambda e: cbToggleImpostor())
     _targetUp = Hotkeys('plus', lambda e: cbTpTargetCountUp())
     _tpToTarget = Hotkeys('delete', lambda e: cbTpToTarget())
+
+    _targetUpRo = Hotkeys('f5', lambda e: cbTpTargetRoomCountUp())
+    _tpToTargetRo = Hotkeys('f6', lambda e: cbTpToTargetRoom())
+
     _completeTasks = Hotkeys('home', lambda e: cbCompleteTasks())
     # _randomHat = Hotkeys('f1', lambda e: cbRandomizePlayer())
     _anonMode = Hotkeys('1', lambda e: cbAnonymousMode())
+    _test = Hotkeys('f1', lambda e: cbRandomizePlayer())
 
     while True:
         if not GAME.update():

@@ -244,6 +244,10 @@ class IShipStatus:
     def MapType(self) -> int:
         pass
 
+    @property
+    def pAllRooms(self) -> int:
+        pass
+
 
 class IGameOptions:
     @property
@@ -269,3 +273,13 @@ class StaticVector:
     @ property
     def Y(self) -> float:
         return self._y_
+
+
+class IPlainRoom:
+    @property
+    def SystemType(self) -> int:
+        pass
+
+    @property
+    def pRoomArea(self) -> int:
+        pass

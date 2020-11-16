@@ -184,7 +184,11 @@ DATA = {
             "Timer": {
                 "offset": 204,
                 "unpack": "f"
-            }
+            },
+            'pAllRooms': {
+                'offset': 140,
+                'unpack': 'i'
+            },
         },
         'GameOptions': {
             "Speed": {
@@ -243,10 +247,52 @@ DATA = {
                 "offset": 40,
                 "unpack": "i"
             }
+        },
+        'PlainShipRoom': {
+            "SystemType": {
+                "offset": 12,
+                "unpack": "i"
+            },
+            "pRoomArea": {
+                "offset": 20,
+                "unpack": "i"
+            }
         }
     },
     'CONSTS': {
         'LAYER_PLAYER': 8,
-        'LAYER_GHOST': 14
+        'LAYER_GHOST': 14,
+        'SYSTEM_TYPES': {
+            6: "Admin",
+            22: "Balcony",
+            29: "BoilerRoom",
+            2: "Cafeteria",
+            14: "Comms",
+            18: "Decontamination",
+            26: "Decontamination2",
+            16: "Doors",
+            25: "Dropship",
+            7: "Electrical",
+            24: "Greenhouse",
+            0: "Hallway",
+            21: "Laboratory",
+            19: "Launchpad",
+            8: "LifeSupport",
+            20: "LockerRoom",
+            13: "LowerEngine",
+            10: "MedBay",
+            5: "Nav",
+            23: "Office",
+            27: "Outside",
+            3: "Reactor",
+            17: "Sabotage",
+            11: "Security",
+            9: "Shields",
+            15: "ShipTasks",
+            28: "Specimens",
+            1: "Storage",
+            4: "UpperEngine",
+            12: "Weapons",
+        }
     }
 }

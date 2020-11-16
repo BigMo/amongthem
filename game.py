@@ -256,7 +256,7 @@ _fn_GameObject_set_Layer: ShellCode = x86.Assembler()\
 _fn_Transform_get_Position: ShellCode = x86.Assembler()\
     .pushInt8(0)\
     .pushInt32Operand('pTransform')\
-    .pushInt32('pTargetBuffer')\
+    .pushInt32Operand('pTargetBuffer')\
     .movInt32ToEaxOperand('pTransform_get_Position')\
     .callEax()\
     .addInt8ToEsp(0xC)\
@@ -287,44 +287,49 @@ class Game:
         self._unityPlayerBase_: int = 0
         self._gameOptions_: IGameOptions = None
         self._shipStatus_: IShipStatus = None
+        self._shipRooms_: Sequence[IPlainRoom] = []
         self._playerControlStatic_: IPlayerControlStatic = None
         self._localPlayer_: IFullPlayerControl = None
         self._allPlayers_: Sequence[IFullPlayerControl] = []
         self._injector_: ShellCodeInjector = None
 
-    @property
+    @ property
     def pm(self) -> Pymem:
         return self._pm_
 
-    @property
+    @ property
     def gameAssemblyBase(self) -> int:
         return self._gameAssemblyBase_
 
-    @property
+    @ property
     def unityPlayerBase(self) -> int:
         return self._unityPlayerBase_
 
-    @property
+    @ property
     def gameOptions(self) -> IGameOptions:
         return self._gameOptions_
 
-    @property
+    @ property
     def shipStatus(self) -> IShipStatus:
         return self._shipStatus_
 
-    @property
+    @ property
     def playerControlStatic(self) -> IPlayerControlStatic:
         return self._playerControlStatic_
 
-    @property
+    @ property
     def localPlayer(self) -> IFullPlayerControl:
         return self._localPlayer_
 
-    @property
+    @ property
     def allPlayers(self) -> Sequence[IFullPlayerControl]:
         return self._allPlayers_
 
     @property
+    def shipRooms(self) -> Sequence[IPlainRoom]:
+        return self._shipRooms_
+
+    @ property
     def initialized(self) -> bool:
         if self._pm_ == None:
             try:
@@ -378,7 +383,18 @@ class Game:
             self._gameOptions_ = self._getGameOptions_()
             # ShipStatus
             self._shipStatus_ = self._getShipStatus_()
-        except:
+            if self._shipStatus_:
+                _arrType = DATA['STRUCTS']['Array']
+                _lengthOffset = _arrType['max_length']['offset']
+                _itemsOffset = _arrType['pItems']['offset']
+                _length = self._pm_.read_int(
+                    self._shipStatus_.pAllRooms + _lengthOffset)
+                _roomAddresses = [self._pm_.read_int(
+                    self._shipStatus_.pAllRooms + _itemsOffset + i * 4) for i in range(0, _length)]
+                self._shipRooms_ = [readType(
+                    self._pm_, _addr, DATA['STRUCTS']['PlainShipRoom']) for _addr in _roomAddresses]
+
+        except Exception as e:
             return False
 
         return True
@@ -428,7 +444,7 @@ class Game:
 
     def setComponentPosition(self, pComponent: int, pos: StaticVector):
         global _fn_Component_set_Position
-        _newPosAddr = _fn_Component_set_Position.buffers['pNewPos'].addr
+        _newPosAddr = _fn_Component_set_Position.buffers['pNewPosition'].addr
         self._pm_.write_float(_newPosAddr, pos.X)
         self._pm_.write_float(_newPosAddr + 4, pos.Y)
 

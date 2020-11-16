@@ -22,19 +22,22 @@ MAPS = {
     },
     1: {
         'image': None,
-        'center': (124, 468),
-        'size': (abs(-5 - 31), abs(-3.3 - 26.5))
+        'center': (124 * 0.5, 468 * 0.5),
+        'size': (abs(-10 - 62) * 0.5 , abs(-6.6 - 53) * 0.5)
     },
     2: {
         'image': None,
-        'center': (-5, 0),
-        'size': (abs(0.4 - 41), abs(-27 - 0))
+        'center': (-5 * 0.5 , 0 * 0.5),
+        'size': (abs(0.8 - 82) * 0.5, abs(-54 - 0) * 0.5)
     }
 }
+
+ANONYMOUS = True
 
 UI_TEXT = """Hotkeys:
 [Shift] - Hold for Speedhack
 [I] - Toggle Impostor on/off
+[1] - Toggle Anonymous Mode
 """
 
 
@@ -44,6 +47,7 @@ def currentTpTarget():
 
 def drawmap(_canvas_: Canvas):
     global MAPS
+    global ANONYMOUS
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
 
@@ -61,16 +65,19 @@ def drawmap(_canvas_: Canvas):
 
         _canvas_.create_image(0, 0, image=map['image'], anchor=NW)
 
-        _create_circle(_canvas_, center[0], center[1], 10, fill='#fff')
-
         for p in GAME.allPlayers:
             pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
 
             drawpos = (center[0] + pos.X * scale[0],
                        (center[1] - pos.Y * scale[1]))
-            _create_circle(
-                _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[p.PlayerData.colorId], width=1)
-            _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
+
+            if ANONYMOUS:
+                _create_circle(
+                    _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[7], width=1)
+            else:
+                _create_circle(
+                    _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[p.PlayerData.colorId], width=1)
+                _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
                                  text=f'{p.Name}\n{"DEAD" if p.PlayerData.isDead else ""}')
 
 
@@ -188,6 +195,10 @@ def hackerino():
         print(f'Attempting revive...')
         GAME.revive(GAME.localPlayer._addr)
 
+    def cbAnonymousMode():
+        global ANONYMOUS
+        ANONYMOUS = not ANONYMOUS
+
     _speed = Hotkeys('shift',
                      lambda e: setSpeed(3.0),
                      lambda e: setSpeed(1.0))
@@ -197,8 +208,7 @@ def hackerino():
     _tpToTarget = Hotkeys('delete', lambda e: cbTpToTarget())
     _completeTasks = Hotkeys('home', lambda e: cbCompleteTasks())
     # _randomHat = Hotkeys('f1', lambda e: cbRandomizePlayer())
-    _test = Hotkeys('f1', lambda e: cbTestLayer())
-    _test2 = Hotkeys('f2', lambda e: cbTestRevive())
+    _anonMode = Hotkeys('1', lambda e: cbAnonymousMode())
 
     while True:
         if not GAME.update():

@@ -9,7 +9,7 @@ from threading import Thread
 from game import GAME, StaticVector
 from helpers import Hotkeys
 
-from tkinter import Tk, Canvas, W, NW, SW, SE
+from tkinter import Tk, Canvas, W, NW, SW, SE, NE
 
 
 TPTARGETPL = 0
@@ -39,8 +39,14 @@ ANONYMOUS = True
 
 UI_TEXT = """Hotkeys:
 [Shift] - Hold for Speedhack
-[I] - Toggle Impostor on/off
-[1] - Toggle Anonymous Mode
+[F1] - Impostor on/off
+[Alt] - Noclip on/off
+[F2] - Select TP Target
+[F3] - TP to target
+[F4] - Select TP room
+[F5] - TP to room
+[F6] - Complete all tasks
+[F7] - Anonymous Mode on/off
 """
 
 
@@ -63,7 +69,7 @@ def drawmap(_canvas_: Canvas):
         scale = (map['image'].width(
         ) / map['size'][0], map['image'].height() / map['size'][1])
         if _canvas_.winfo_width() != size[0] or _canvas_.winfo_height() != size[1]:
-            _canvas_.config(width=size[0], height=size[1])
+            _canvas_.config(width=size[0], height=size[1]+200)
 
         center = map['center']
 
@@ -95,17 +101,20 @@ def draw(_canvas_: Canvas):
 
     drawmap(_canvas_)
 
-    _canvas_.create_text(5, 5, anchor=NW, font="Arial", text=UI_TEXT)
+    _canvas_.create_text(5, _canvas_.winfo_height() - 200, anchor=NW, font="Arial", text=UI_TEXT)
 
     _targetPlayer = currentTpTarget()
-    if _targetPlayer:
-        _canvas_.create_text(5, _canvas_.winfo_height() - 5, anchor=SW, font='Arial',
-                             text=f'TP-Target: {_targetPlayer.Name}')
-
     _targetRoom = currentTpTargetRoom()
+    _tpTargets = 'Targets:\n'
+    if _targetPlayer:
+        _tpTargets += f'TP-Target: {_targetPlayer.Name}\n'
+
     if _targetRoom:
-        _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 5, anchor=SE, font='Arial',
-                             text=f'TP-Target-Room: {DATA["CONSTS"]["SYSTEM_TYPES"][_targetRoom.SystemType]}')
+        _tpTargets += f'TP-Target-Room: {DATA["CONSTS"]["SYSTEM_TYPES"][_targetRoom.SystemType]}'
+    
+    _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 200, anchor=NE, font='Arial',
+                             text=_tpTargets)
+
 
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))
@@ -197,18 +206,18 @@ def hackerino():
                      lambda e: setSpeed(1.0))
     _speed = Hotkeys('alt',
                      lambda e: cbToggleNoClip())
-    _impostor = Hotkeys('insert',
+    _impostor = Hotkeys('f1',
                         lambda e: cbToggleImpostor())
-    _targetUp = Hotkeys('plus', lambda e: cbTpTargetCountUp())
-    _tpToTarget = Hotkeys('delete', lambda e: cbTpToTarget())
+    _targetUp = Hotkeys('f2', lambda e: cbTpTargetCountUp())
+    _tpToTarget = Hotkeys('f3', lambda e: cbTpToTarget())
 
-    _targetUpRo = Hotkeys('f5', lambda e: cbTpTargetRoomCountUp())
-    _tpToTargetRo = Hotkeys('f6', lambda e: cbTpToTargetRoom())
+    _targetUpRo = Hotkeys('f4', lambda e: cbTpTargetRoomCountUp())
+    _tpToTargetRo = Hotkeys('f5', lambda e: cbTpToTargetRoom())
 
-    _completeTasks = Hotkeys('home', lambda e: cbCompleteTasks())
+    _completeTasks = Hotkeys('f6', lambda e: cbCompleteTasks())
     # _randomHat = Hotkeys('f1', lambda e: cbRandomizePlayer())
-    _anonMode = Hotkeys('1', lambda e: cbAnonymousMode())
-    _test = Hotkeys('f1', lambda e: cbRandomizePlayer())
+    _anonMode = Hotkeys('f7', lambda e: cbAnonymousMode())
+    #_test = Hotkeys('f1', lambda e: cbRandomizePlayer())
 
     while True:
         if not GAME.update():

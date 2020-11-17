@@ -370,6 +370,8 @@ class Game:
 
         try:
             self._playerControlStatic_ = self._getPlayerControlStatic_()
+            if not self._playerControlStatic_:
+                return False
             # Local player
             _local = self._getPlayerControl_(
                 self._playerControlStatic_.pLocalPlayer)
@@ -381,7 +383,7 @@ class Game:
                 player) for player in _allPlayers]
             # GameOptions
             self._gameOptions_ = self._getGameOptions_()
-            # ShipStatus
+            # ShipStatus + Rooms
             self._shipStatus_ = self._getShipStatus_()
             if self._shipStatus_:
                 _arrType = DATA['STRUCTS']['Array']

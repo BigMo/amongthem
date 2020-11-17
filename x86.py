@@ -1,10 +1,76 @@
 import ctypes
+from enum import Enum
 import struct
 from pymem import Pymem
 import pymem.ressources.kernel32
 import pymem.ressources.structure
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 from threading import Lock
+
+
+class LabelRefType(Enum):
+    Relative = 1,
+    Absolute = 2
+
+
+class LabelRef:
+    def __init__(self, labelName: str, offset: int, refType: LabelRefType, format='I'):
+        self._labelName_ = labelName
+        self._offset_ = offset
+        self._refType_ = refType
+        self._format_ = format
+        self._value_ = None
+
+    @property
+    def value(self) -> int:
+        return self._value_
+
+    @value.setter
+    def value(self, val) -> None:
+        self._value_ = val
+
+    @property
+    def format(self) -> str:
+        return self._format_
+
+    @property
+    def offset(self) -> int:
+        return self._offset_
+
+    @property
+    def labelName(self) -> str:
+        return self._labelName_
+
+    @property
+    def refType(self) -> LabelRefType:
+        return self._refType_
+
+    def __str__(self) -> str:
+        if self._value_ != None:
+            return f'Ref "{self.labelName}" ({self._refType_.name}) at offset {hex(self._offset_)} set to {hex(self._value_)}'
+        else:
+            return f'Ref "{self.labelName}" ({self._refType_.name}) at offset {hex(self._offset_)}'
+
+
+class Label:
+    def __init__(self, name: str, offset: int):
+        self._name_ = name
+        self._offset_ = offset
+
+    @property
+    def name(self) -> str:
+        return self._name_
+
+    @property
+    def offset(self) -> int:
+        return self._offset_
+
+    @offset.setter
+    def offset(self, val):
+        self._offset_ = val
+
+    def __str__(self):
+        return f'"{self._name_}" at offset {hex(self._offset_)}'
 
 
 class Operand:
@@ -44,7 +110,9 @@ class Mappable:
 
     @addr.setter
     def addr(self, _addr: int) -> None:
-        self._addr_ = _addr
+        if self._addr_ != _addr:
+            self._addr_ = _addr
+            self._outdated_ = True
 
     @property
     def mapped(self) -> bool:
@@ -76,10 +144,11 @@ class Buffer(Mappable):
 
 
 class ShellCode(Mappable):
-    def __init__(self, code: bytes, operands: Dict[str, Operand]):
+    def __init__(self, code: bytes, operands: Dict[str, Operand], labels: Dict[str, Label], labelRefs: List[LabelRef]):
         self._code_: bytes = code
         self._operands_: Dict[str, Operand] = operands
-        self._addr_ = None
+        self._labels_: Dict[str, Label] = labels
+        self._labelRefs_: List[LabelRef] = labelRefs
         self._buffers_: Dict[str, Buffer] = {}
 
     def updateCode(self, operandValues: Dict[str, Any] = None):
@@ -105,9 +174,39 @@ class ShellCode(Mappable):
             _start = _op.offset
             _end = _op.offset + len(_data)
             _code[_start:_end] = _data
+        if self.resolveLabels():
+            for labelRef in self._labelRefs_:
+                _data = struct.pack(labelRef.format, labelRef.value)
+                _start = labelRef.offset
+                _end = labelRef.offset + len(_data)
+                _code[_start:_end] = _data
         if self.outdated or self._code_ != _code:
             self._code_ = bytes(_code)
             self._outdated_ = True
+
+    def resolveLabels(self) -> bool:
+        if not self.mapped:
+            return False
+
+        hasChanged = False
+        for labelRef in self._labelRefs_:
+            _label = self._labels_.get(labelRef.labelName)
+            if not _label:
+                raise Exception(f'Missing label "{labelRef.labelName}"!')
+
+            if labelRef.refType == LabelRefType.Absolute:
+                value = self.addr + _label.offset
+            else:
+                size = struct.calcsize(labelRef.format)
+                start = labelRef.offset + size
+                end = _label.offset
+                value = end - start
+
+            if value != labelRef.value:
+                hasChanged = True
+                labelRef.value = value
+
+        return hasChanged
 
     def addBuffer(self, name: str, size: int) -> 'ShellCode':
         self._buffers_[name] = Buffer(size)
@@ -126,12 +225,12 @@ class ShellCode(Mappable):
         return self._buffers_
 
     @property
-    def addr(self) -> bytes:
-        return self._addr_
+    def labels(self) -> Dict[str, Label]:
+        return self._labels_
 
-    @addr.setter
-    def addr(self, _addr: int) -> None:
-        self._addr_ = _addr
+    @property
+    def labelReferences(self) -> List[LabelRef]:
+        return self._labelRefs_
 
     @property
     def initialized(self) -> bool:
@@ -143,10 +242,14 @@ class ShellCode(Mappable):
         _ops = ', '.join(
             [f'"{name}"{str(o)}' for name, o in self._operands_])\
             if len(self._operands_) > 0 else 'none'
+        _labels = ', '.join(
+            [str(l) for _, l in self._labels_.items()]
+        ),
+        _labelRefs = ', '.join([str(lRef) for lRef in self._labelRefs_])
         _bufs = ', '.join(
             [f'{name} {str(buffer)}' for name, buffer in self._buffers_]
         ) if len(self._buffers_) > 0 else 'none'
-        return f'Code: [{_code}] {_addr}, Operands: {_ops}, Buffers: {_bufs}'
+        return f'Code: [{_code}] {_addr}; Operands: {_ops}; Buffers: {_bufs}; Labels: {_labels}; LabelReferences: {_labelRefs}'
 
 
 class ShellCodeInjector:
@@ -204,8 +307,10 @@ class ShellCodeInjector:
             if not code.mapped:
                 code.addr = self.alloc(len(code.code))
                 self._pm_.write_bytes(code.addr, code.code, len(code.code))
-                code.outdated = False
-            elif code.outdated:
+                code.outdated = code.resolveLabels()
+                if code.outdated:
+                    code.updateCode()
+            if code.outdated:
                 self._pm_.write_bytes(code.addr, code.code, len(code.code))
                 code.outdated = False
             # Execute function
@@ -215,7 +320,9 @@ class ShellCodeInjector:
 class Assembler:
     def __init__(self):
         self._code_ = bytearray()
-        self._operands_ = {}
+        self._operands_: Dict[str, Operand] = {}
+        self._labels_: Dict[str, Label] = {}
+        self._labelRefs_: List[LabelRef] = []
 
     def pushInt8(self, _val) -> 'Assembler':
         self._code_ += b'\x6A' + struct.pack('B', _val)  # push _val
@@ -284,6 +391,11 @@ class Assembler:
         self._code_ += b'\xFF\xD0'  # call eax
         return self
 
+    def callInt32Operand(self, _name) -> 'Assembler':
+        self._operands_[_name] = Operand(len(self._code_) + 2, 'I')
+        self._code_ += b'\xFF\x15\x00\x00\x00\x00'  # add esp, _val
+        return self
+
     def addInt8ToEsp(self, _val) -> 'Assembler':
         self._code_ += b'\x83\xC4' + struct.pack('B', _val)  # add esp, _val
         return self
@@ -304,6 +416,21 @@ class Assembler:
 
     def ret(self) -> 'Assembler':
         self._code_ += b'\xC3'  # ret
+        return self
+
+    def pushLabel(self, name) -> 'Assembler':
+        self._code_ += b'\x68'  # push...
+        return self._labelRef_(name, LabelRefType.Absolute)  # ...[name]
+
+    def _labelRef_(self, name: str, refType: LabelRefType, format='I') -> 'Assembler':
+        self._labelRefs_.append(
+            LabelRef(name, len(self._code_), refType, format))
+        size = struct.calcsize(format)
+        self._code_ += b'\x00' * size
+        return self
+
+    def label(self, name: str) -> 'Assembler':
+        self._labels_[name] = Label(name, len(self._code_))
         return self
 
     def assemble(self) -> ShellCode:

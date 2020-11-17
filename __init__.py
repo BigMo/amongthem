@@ -1,15 +1,13 @@
-from gametypes import IPlainRoom
 import time
 import random
-from typing import Tuple
 from PIL import ImageTk, Image
-from gamedata import DATA
-
 from threading import Thread
+from tkinter import Tk, Canvas, W, NW, SW, SE, NE
+
+from gamedata import DATA
+from gametypes import IPlainRoom
 from game import GAME, StaticVector
 from helpers import Hotkeys
-
-from tkinter import Tk, Canvas, W, NW, SW, SE, NE
 
 
 TPTARGETPL = 0
@@ -79,7 +77,7 @@ def drawmap(_canvas_: Canvas):
         _canvas_.create_image(0, 0, image=map['image'], anchor=NW)
 
         for p in GAME.allPlayers:
-            pos = p.Position  # p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
+            pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
 
             drawpos = (center[0] + pos.X * scale[0],
                        (center[1] - pos.Y * scale[1]))
@@ -101,7 +99,8 @@ def draw(_canvas_: Canvas):
 
     drawmap(_canvas_)
 
-    _canvas_.create_text(5, _canvas_.winfo_height() - 200, anchor=NW, font="Arial", text=UI_TEXT)
+    _canvas_.create_text(5, _canvas_.winfo_height() - 200,
+                         anchor=NW, font="Arial", text=UI_TEXT)
 
     _targetPlayer = currentTpTarget()
     _targetRoom = currentTpTargetRoom()
@@ -111,10 +110,9 @@ def draw(_canvas_: Canvas):
 
     if _targetRoom:
         _tpTargets += f'TP-Target-Room: {DATA["CONSTS"]["SYSTEM_TYPES"][_targetRoom.SystemType]}'
-    
-    _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 200, anchor=NE, font='Arial',
-                             text=_tpTargets)
 
+    _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 200, anchor=NE, font='Arial',
+                         text=_tpTargets)
 
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))
@@ -132,14 +130,15 @@ def updateGraph():
     MAPS[0]['image'] = loadImage('./map0.png', 0.5)
     MAPS[1]['image'] = loadImage('./map1.png', 0.5)
     MAPS[2]['image'] = loadImage('./map2.png', 0.5)
-    canvas = Canvas(root, bg='white')  # , width=SIZE[0], height=SIZE[1])
+    canvas = Canvas(root)  # , width=SIZE[0], height=SIZE[1])
     canvas.grid()
+    canvas.config(bg='white')
     draw(canvas)
     root.lift()
     root.attributes('-topmost', True)
     root.attributes('-alpha', 0.6)
     # root.wm_attributes("-transparentcolor", "white")
-    root.wm_title('[amongthem] by Zat')
+    root.wm_title('[amongthem] by Zat & itsEzz')
     root.mainloop()
 
 
@@ -234,15 +233,15 @@ def hackerino():
 def main():
     print("Initializing Game...")
 
+    drawthread = Thread(None, updateGraph, 'draw')
+    drawthread.start()
+
     while not GAME.initialized:
         print(' > Waiting for initalization; waiting for 5s...')
         time.sleep(5)
 
     print(f'GameAssembly.dll: {hex(GAME.gameAssemblyBase)}')
     print(f'UnityPlayer.dll: {hex(GAME.unityPlayerBase)}')
-
-    drawthread = Thread(None, updateGraph, 'draw')
-    drawthread.start()
     hackThread = Thread(None, hackerino, 'hack')
     hackThread.start()
 

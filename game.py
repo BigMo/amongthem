@@ -196,17 +196,51 @@ _fn_PlayerControl_RpcCompleteTask: ShellCode = x86.Assembler()\
     .ret()\
     .assemble()
 
+# .sehPrologue('Component_get_Transform')\
+# .sehEpilogue('Component_get_Transform')\
+# .sehPrologue('Transform_get_Position')\
+# .sehEpilogue('Transform_get_Position')\
+# _fn_Component_get_Position: ShellCode = x86.Assembler()\
+#     .pushInt8(0)\
+#     .pushInt32Operand('pComponent')\
+#     .movInt32ToEaxOperand('pComponent_get_Transform')\
+#     .callEax()\
+#      .testEaxEax()\
+#    .jumpNotZeroLabel('pComponentValid')\
+#    .incEax()\
+#    .ret()\
+#    .label('pComponentValid')\
+#     .addInt8ToEsp(0x8)\
+#     .pushInt8(0)\
+#     .pushEax()\
+#     .pushInt32Operand('pTargetBuffer')\
+#     .movInt32ToEaxOperand('pTransform_get_Position')\
+#     .callEax()\
+#     .addInt8ToEsp(0xC)\
+#     .ret()\
+#     .assemble()\
+#     .addBuffer('pTargetBuffer', 12)
+
 _fn_Component_get_Position: ShellCode = x86.Assembler()\
+    .sehPrologue('Component_get_Transform')\
     .pushInt8(0)\
     .pushInt32Operand('pComponent')\
     .movInt32ToEaxOperand('pComponent_get_Transform')\
     .callEax()\
+    .sehEpilogue('Component_get_Transform')\
     .addInt8ToEsp(0x8)\
+    .testEaxEax()\
+    .jumpNotZeroLabel('pComponentValid')\
+    .xorEaxEax()\
+    .ret()\
+    .label('pComponentValid')\
+    .sehPrologue('Transform_get_Position')\
     .pushInt8(0)\
     .pushEax()\
     .pushInt32Operand('pTargetBuffer')\
     .movInt32ToEaxOperand('pTransform_get_Position')\
     .callEax()\
+    .sehEpilogue('Transform_get_Position')\
     .addInt8ToEsp(0xC)\
     .ret()\
     .assemble()\
@@ -435,14 +469,17 @@ class Game:
 
     def getComponentPosition(self, pComponent: int) -> StaticVector:
         global _fn_Component_get_Position
-        self._injector_.call(_fn_Component_get_Position, {
+        res = self._injector_.call(_fn_Component_get_Position, {
             'pComponent': pComponent,
             'pComponent_get_Transform': self._gameAssemblyBase_ + DATA['OFFSETS']['Component_get_Transform'],
             'pTransform_get_Position': self._gameAssemblyBase_ + DATA['OFFSETS']['Transform_get_Position']
         })
-        result = readType(self._pm_, _fn_Component_get_Position.buffers['pTargetBuffer'].addr,
-                          DATA['STRUCTS']['Vector2'])
-        return result
+        if res:
+            result = readType(self._pm_, _fn_Component_get_Position.buffers['pTargetBuffer'].addr,
+                              DATA['STRUCTS']['Vector2'])
+            return result
+        else:
+            return StaticVector(0.0, 0.0)
 
     def setComponentPosition(self, pComponent: int, pos: StaticVector):
         global _fn_Component_set_Position

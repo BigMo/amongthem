@@ -96,7 +96,10 @@ class Operand:
         self._value_ = val
 
     def __str__(self) -> str:
-        return f'@{self.offset} ("{self._format_}") = {str(self._value_)}'
+        if self._value_ != None:
+            return f'@{self.offset} ("{self._format_}") = {str(self._value_)}'
+        else:
+            return f'@{self.offset} ("{self._format_}") = UNSET'
 
 
 class Mappable:
@@ -145,13 +148,14 @@ class Buffer(Mappable):
 
 class ShellCode(Mappable):
     def __init__(self, code: bytes, operands: Dict[str, Operand], labels: Dict[str, Label], labelRefs: List[LabelRef]):
+        super().__init__()
         self._code_: bytes = code
         self._operands_: Dict[str, Operand] = operands
         self._labels_: Dict[str, Label] = labels
         self._labelRefs_: List[LabelRef] = labelRefs
         self._buffers_: Dict[str, Buffer] = {}
 
-    def updateCode(self, operandValues: Dict[str, Any] = None):
+    def updateCode(self, operandValues: Dict[str, Any] = None, forceCodeGen: bool = False):
         _code = bytearray(self._code_)
         if operandValues:
             for name, value in operandValues.items():
@@ -170,17 +174,21 @@ class ShellCode(Mappable):
             _op = self._operands_.get(name)
             if not _op:
                 raise Exception(f'Buffer "{name}" not mapped to any operands!')
+            if buffer.addr == _op.value:
+                continue
+            _op.value = buffer.addr
             _data = struct.pack('I', buffer.addr)
             _start = _op.offset
             _end = _op.offset + len(_data)
             _code[_start:_end] = _data
-        if self.resolveLabels():
+            self.outdated = True
+        if self.resolveLabels() or forceCodeGen:
             for labelRef in self._labelRefs_:
                 _data = struct.pack(labelRef.format, labelRef.value)
                 _start = labelRef.offset
                 _end = labelRef.offset + len(_data)
                 _code[_start:_end] = _data
-        if self.outdated or self._code_ != _code:
+        if self.outdated or self._code_ != _code or forceCodeGen:
             self._code_ = bytes(_code)
             self._outdated_ = True
 
@@ -205,7 +213,8 @@ class ShellCode(Mappable):
             if value != labelRef.value:
                 hasChanged = True
                 labelRef.value = value
-
+        if hasChanged:
+            self.outdated = True
         return hasChanged
 
     def addBuffer(self, name: str, size: int) -> 'ShellCode':
@@ -232,22 +241,20 @@ class ShellCode(Mappable):
     def labelReferences(self) -> List[LabelRef]:
         return self._labelRefs_
 
-    @property
-    def initialized(self) -> bool:
-        return self._addr_ != None
-
     def __str__(self):
         _code = ' '.join([f'{b:02x}' for b in self._code_])
-        _addr = f'at 0x{self._addr_:08x}' if self._addr_ else 'UNMAPPED'
+        _addr = f'at 0x{self.addr:08x}' if self.addr else 'UNMAPPED'
         _ops = ', '.join(
-            [f'"{name}"{str(o)}' for name, o in self._operands_])\
+            [f'"{name}"{str(o)}' for name, o in self._operands_.items()])\
             if len(self._operands_) > 0 else 'none'
         _labels = ', '.join(
             [str(l) for _, l in self._labels_.items()]
-        ),
-        _labelRefs = ', '.join([str(lRef) for lRef in self._labelRefs_])
+        ) if len(self._labels_) > 0 else 'none'
+        _labelRefs = ', '.join([str(lRef) for lRef in self._labelRefs_]) if len(
+            self._labelRefs_) > 0 else 'none'
         _bufs = ', '.join(
-            [f'{name} {str(buffer)}' for name, buffer in self._buffers_]
+            [f'{name} {str(buffer)}' for name,
+             buffer in self._buffers_.items()]
         ) if len(self._buffers_) > 0 else 'none'
         return f'Code: [{_code}] {_addr}; Operands: {_ops}; Buffers: {_bufs}; Labels: {_labels}; LabelReferences: {_labelRefs}'
 
@@ -278,7 +285,7 @@ class ShellCodeInjector:
             pymem.ressources.structure.MEMORY_STATE.MEM_RELEASE.value
         )
 
-    def execute(self, _addr):
+    def execute(self, _addr) -> int:
         thread_h = pymem.ressources.kernel32.CreateRemoteThread(
             self.handle, None, 0, _addr, 0, 0, None
         )
@@ -295,7 +302,7 @@ class ShellCodeInjector:
             if not buffer.mapped:
                 buffer.addr = self.alloc(buffer._size_)
 
-    def call(self, code: ShellCode, operandValues: Dict[str, Any] = None):
+    def call(self, code: ShellCode, operandValues: Dict[str, Any] = None) -> int:
         with self._lock_:  # We don't want multiple threads to fck up the shellcode...
             # Alloc buffers and write them to the func code if necessary
             _buffers = [b for _, b in code.buffers.items() if not b.mapped]
@@ -304,17 +311,18 @@ class ShellCodeInjector:
                     buffer.addr = self.alloc(buffer._size_)
             code.updateCode(operandValues)
             # Write func to mem if neccessary
+            #print(str(code))
             if not code.mapped:
                 code.addr = self.alloc(len(code.code))
                 self._pm_.write_bytes(code.addr, code.code, len(code.code))
                 code.outdated = code.resolveLabels()
-                if code.outdated:
-                    code.updateCode()
+                code.updateCode(forceCodeGen=True)
             if code.outdated:
                 self._pm_.write_bytes(code.addr, code.code, len(code.code))
                 code.outdated = False
             # Execute function
-            self.execute(code.addr)
+            #print(code)
+            return self.execute(code.addr)
 
 
 class Assembler:
@@ -391,6 +399,18 @@ class Assembler:
         self._code_ += b'\xFF\xD0'  # call eax
         return self
 
+    def testEaxEax(self) -> 'Assembler':
+        self._code_ += b'\x85\xC0'  # test eax, eax -> is eax non-zero?
+        return self
+
+    def incEax(self) -> 'Assembler':
+        self._code_ += b'\x40'  # inc eax
+        return self
+
+    def xorEaxEax(self) -> 'Assembler':
+        self._code_ += b'\x31\xC0'  # xor eax, eax
+        return self
+
     def callInt32Operand(self, _name) -> 'Assembler':
         self._operands_[_name] = Operand(len(self._code_) + 2, 'I')
         self._code_ += b'\xFF\x15\x00\x00\x00\x00'  # add esp, _val
@@ -422,6 +442,55 @@ class Assembler:
         self._code_ += b'\x68'  # push...
         return self._labelRef_(name, LabelRefType.Absolute)  # ...[name]
 
+    def sehPrologue(self, name=None) -> 'Assembler':
+        _lblHandler = f'_SEHANDLER_{name}_' if name else '_SEHANDLER_'
+        # PUSH [ERRORHANDLER] - pointer to error handler
+        self.pushLabel(_lblHandler)
+        # PUSH DWORD PTR FS:[0]   - save old SE handler
+        self._code_ += b'\x64\xFF\x35\x00\x00\x00\x00'
+        # MOV DWORD PTR FS:[0],ESP - set new seh record
+        self._code_ += b'\x64\x89\x25\x00\x00\x00\x00'
+        return self
+
+    def sehEpilogue(self, name=None) -> 'Assembler':
+        _lblHandler = f'_SEHANDLER_{name}_' if name else '_SEHANDLER_'
+        _lblNoError = f'_SEH_NO_ERROR_{name}_' if name else '_SEH_NO_ERROR_'
+
+        self.jumpShortLabel(_lblNoError)
+        self.label(_lblHandler)
+        # MOV ESP,DWORD PTR SS:[ESP+8] - error handler here... restore esp
+        self._code_ += b'\x8B\x64\xE4\x08'
+        # XOR EAX,EAX  - set eax
+        self.xorEaxEax()
+        # SUB EAX,1      to -1
+        self._code_ += b'\x83\xE8\x01'
+        self.label(_lblNoError)
+        # POP DWORD PTR FS:[0] - jump here if no error
+        self._code_ += b'\x64\x8F\x05\x00\x00\x00\x00'
+        # ADD ESP,4
+        self._code_ += b'\x83\xC4\x04'
+        return self
+
+    def jumpShortInt8(self, _val) -> 'Assembler':
+        self._code_ += b'\xEB' + struct.pack('B', _val)
+        return self
+
+    def jumpShortLabel(self, label) -> 'Assembler':
+        self._code_ += b'\xEB'
+        return self._labelRef_(label, LabelRefType.Relative, 'B')
+
+    def jumpNotZeroLabel(self, label) -> 'Assembler':
+        self._code_ += b'\x75' # jz [label]
+        return self._labelRef_(label, LabelRefType.Relative, 'B')
+
+    def jumpLessLabel(self, label) -> 'Assembler':
+        self._code_ += b'\x7C' # jl [label] -> is SF != OF
+        return self._labelRef_(label, LabelRefType.Relative, 'B')
+
+    def jumpNotLessLabel(self, label) -> 'Assembler':
+        self._code_ += b'\x7D' # jnl [label] -> is SF == OF
+        return self._labelRef_(label, LabelRefType.Relative, 'B')
+
     def _labelRef_(self, name: str, refType: LabelRefType, format='I') -> 'Assembler':
         self._labelRefs_.append(
             LabelRef(name, len(self._code_), refType, format))
@@ -434,7 +503,8 @@ class Assembler:
         return self
 
     def assemble(self) -> ShellCode:
-        shellCode = ShellCode(bytes(self._code_), self._operands_)
+        shellCode = ShellCode(bytes(self._code_),
+                              self._operands_, self._labels_, self._labelRefs_)
         self._code_ = bytearray()
         self._operands_ = {}
         return shellCode

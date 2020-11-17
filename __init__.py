@@ -77,7 +77,7 @@ def drawmap(_canvas_: Canvas):
         _canvas_.create_image(0, 0, image=map['image'], anchor=NW)
 
         for p in GAME.allPlayers:
-            pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
+            pos = p.Position  # p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
 
             drawpos = (center[0] + pos.X * scale[0],
                        (center[1] - pos.Y * scale[1]))

@@ -86,7 +86,10 @@ def drawmap(_canvas_: Canvas):
             deadPlayer = manageDeadPlayer(p)
             pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
             if deadPlayer:
-                deadPos = getDeadPlayer(p).NetworkTransform.TargetSyncPos
+                deadPlayerObj = getDeadPlayer(p)
+                if (time.time() - deadPlayerObj.killTimer) > 40:
+                   continue
+                deadPos = deadPlayerObj.NetworkTransform.TargetSyncPos
                 pos = deadPos
 
             drawpos = (center[0] + pos.X * scale[0],
@@ -126,6 +129,7 @@ def manageDeadPlayer(p):
             found = False
 
     if not found and p.PlayerData.isDead:
+        p.killTimer = time.time()
         DEADPLAYERS.append(p)
     elif found == True and p.PlayerData.isDead == False:
         DEADPLAYERS.remove(deadPlayer)

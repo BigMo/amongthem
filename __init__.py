@@ -49,6 +49,7 @@ UI_TEXT = """Hotkeys:
 [F5] - TP to room
 [F6] - Complete all tasks
 [F7] - Anonymous Mode on/off
+[F11] - Quit
 """
 
 

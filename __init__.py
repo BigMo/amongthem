@@ -35,6 +35,8 @@ MAPS = {
 
 ANONYMOUS = True
 
+DEADPLAYERS = []
+
 UI_TEXT = """Hotkeys:
 [Shift] - Hold for Speedhack
 [F1] - Impostor on/off
@@ -59,6 +61,7 @@ def currentTpTargetRoom() -> IPlainRoom:
 def drawmap(_canvas_: Canvas):
     global MAPS
     global ANONYMOUS
+    global DEADPLAYERS
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
 
@@ -77,7 +80,11 @@ def drawmap(_canvas_: Canvas):
         _canvas_.create_image(0, 0, image=map['image'], anchor=NW)
 
         for p in GAME.allPlayers:
+            deadPlayer = manageDeadPlayer(p)
             pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
+            if deadPlayer:
+                deadPos = getDeadPlayer(p).NetworkTransform.TargetSyncPos
+                pos = deadPos
 
             drawpos = (center[0] + pos.X * scale[0],
                        (center[1] - pos.Y * scale[1]))
@@ -91,6 +98,30 @@ def drawmap(_canvas_: Canvas):
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
                                      text=f'{p.Name}\n{"DEAD" if p.PlayerData.isDead else ""}')
 
+def getDeadPlayer(p):
+    global DEADPLAYERS
+    for deadp in DEADPLAYERS:
+        if p.Name == deadp.Name:
+            return deadp
+
+def manageDeadPlayer(p):
+    global DEADPLAYERS
+    found = False
+    deadPlayer = None
+
+    for deadp in DEADPLAYERS:
+        if p.Name == deadp.Name and p.PlayerData.isDead:
+            found = True
+            deadPlayer = deadp
+            break
+        else:
+            found = False
+    
+    if not found and p.PlayerData.isDead:
+        DEADPLAYERS.append(p)
+    elif found == True and p.PlayerData.isDead == False:
+        DEADPLAYERS.remove(deadPlayer)
+    return found
 
 def draw(_canvas_: Canvas):
     _canvas_.delete('all')

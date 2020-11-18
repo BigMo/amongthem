@@ -1,4 +1,6 @@
 import time
+import os
+import signal
 import random
 from PIL import ImageTk, Image
 from threading import Thread
@@ -89,7 +91,10 @@ def drawmap(_canvas_: Canvas):
             drawpos = (center[0] + pos.X * scale[0],
                        (center[1] - pos.Y * scale[1]))
 
-            if ANONYMOUS:
+            if deadPlayer:
+                _create_circle(
+                    _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#878787", width=1)
+            elif ANONYMOUS:
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[7], width=1)
             else:
@@ -98,11 +103,13 @@ def drawmap(_canvas_: Canvas):
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
                                      text=f'{p.Name}\n{"DEAD" if p.PlayerData.isDead else ""}')
 
+
 def getDeadPlayer(p):
     global DEADPLAYERS
     for deadp in DEADPLAYERS:
         if p.Name == deadp.Name:
             return deadp
+
 
 def manageDeadPlayer(p):
     global DEADPLAYERS
@@ -116,12 +123,13 @@ def manageDeadPlayer(p):
             break
         else:
             found = False
-    
+
     if not found and p.PlayerData.isDead:
         DEADPLAYERS.append(p)
     elif found == True and p.PlayerData.isDead == False:
         DEADPLAYERS.remove(deadPlayer)
     return found
+
 
 def draw(_canvas_: Canvas):
     _canvas_.delete('all')
@@ -230,7 +238,6 @@ def hackerino():
     def cbAnonymousMode():
         global ANONYMOUS
         ANONYMOUS = not ANONYMOUS
-
     _speed = Hotkeys('shift',
                      lambda e: setSpeed(3.0),
                      lambda e: setSpeed(1.0))
@@ -262,6 +269,7 @@ def hackerino():
 
 
 def main():
+    _quit = Hotkeys('f11', lambda e: os.kill(os.getpid(), signal.SIGTERM))
     print("Initializing Game...")
 
     drawthread = Thread(None, updateGraph, 'draw')

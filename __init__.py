@@ -97,7 +97,8 @@ def drawmap(_canvas_: Canvas):
                         *pts, fill="#f11", width=3, smooth=True)
                     _canvas_.create_line(
                         *pts, fill=COLORS[p.PlayerData.colorId], smooth=True)
-
+        if len(GAME.allPlayers) == 0:
+            DEADPLAYERS.clear()
         for p in GAME.allPlayers:
             deadPlayer = manageDeadPlayer(p)
 
@@ -113,7 +114,9 @@ def drawmap(_canvas_: Canvas):
 
             if deadPlayer:
                 _create_circle(
-                    _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#878787", width=1)
+                    _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#f2ff00", width=1)
+                _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
+                                     text='KILLED')
             elif ANONYMOUS:
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[7], width=1)
@@ -147,8 +150,6 @@ def manageDeadPlayer(p):
     if not found and p.PlayerData.isDead:
         p.killTimer = time.time()
         DEADPLAYERS.append(p)
-    elif found == True and p.PlayerData.isDead == False:
-        DEADPLAYERS.remove(deadPlayer)
     return found
 
 

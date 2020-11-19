@@ -94,9 +94,9 @@ def drawmap(_canvas_: Canvas):
                     dpts = [translateVec(p) for p in _his.items]
                     pts = [p for v in dpts for p in v]
                     _canvas_.create_line(
-                        *pts, fill="#f11", width=3)
+                        *pts, fill="#f11", width=3, smooth=True)
                     _canvas_.create_line(
-                        *pts, fill=COLORS[p.PlayerData.colorId])
+                        *pts, fill=COLORS[p.PlayerData.colorId], smooth=True)
 
         for p in GAME.allPlayers:
             deadPlayer = manageDeadPlayer(p)

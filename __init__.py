@@ -87,15 +87,16 @@ def drawmap(_canvas_: Canvas):
             return (center[0] + vec.X * scale[0],
                     (center[1] - vec.Y * scale[1]))
 
-        for p in GAME.allPlayers:
-            _his = GAME.playerPositions.get(p.PlayerId)
-            if _his and len(_his.items) > 1:
-                dpts = [translateVec(p) for p in _his.items]
-                pts = [p for v in dpts for p in v]
-                _canvas_.create_line(
-                    *pts, fill="#f11", width=3)
-                _canvas_.create_line(
-                    *pts, fill=COLORS[p.PlayerData.colorId])
+        if not ANONYMOUS:
+            for p in [p for p in GAME.allPlayers if not p.PlayerData.isDead]:
+                _his = GAME.playerPositions.get(p.PlayerId)
+                if _his and len(_his.items) > 1:
+                    dpts = [translateVec(p) for p in _his.items]
+                    pts = [p for v in dpts for p in v]
+                    _canvas_.create_line(
+                        *pts, fill="#f11", width=3)
+                    _canvas_.create_line(
+                        *pts, fill=COLORS[p.PlayerData.colorId])
 
         for p in GAME.allPlayers:
             deadPlayer = manageDeadPlayer(p)

@@ -2,6 +2,7 @@ import time
 import os
 import signal
 import random
+from typing import Tuple
 from PIL import ImageTk, Image
 from threading import Thread
 from tkinter import Tk, Canvas, W, NW, SW, SE, NE
@@ -82,18 +83,32 @@ def drawmap(_canvas_: Canvas):
 
         _canvas_.create_image(0, 0, image=map['image'], anchor=NW)
 
+        def translateVec(vec) -> Tuple[float, float]:
+            return (center[0] + vec.X * scale[0],
+                    (center[1] - vec.Y * scale[1]))
+
+        for p in GAME.allPlayers:
+            _his = GAME.playerPositions.get(p.PlayerId)
+            if _his and len(_his.items) > 1:
+                dpts = [translateVec(p) for p in _his.items]
+                pts = [p for v in dpts for p in v]
+                _canvas_.create_line(
+                    *pts, fill="#f11", width=3)
+                _canvas_.create_line(
+                    *pts, fill=COLORS[p.PlayerData.colorId])
+
         for p in GAME.allPlayers:
             deadPlayer = manageDeadPlayer(p)
+
             pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
             if deadPlayer:
                 deadPlayerObj = getDeadPlayer(p)
                 if (time.time() - deadPlayerObj.killTimer) > 40:
-                   continue
+                    continue
                 deadPos = deadPlayerObj.NetworkTransform.TargetSyncPos
                 pos = deadPos
 
-            drawpos = (center[0] + pos.X * scale[0],
-                       (center[1] - pos.Y * scale[1]))
+            drawpos = translateVec(pos)
 
             if deadPlayer:
                 _create_circle(

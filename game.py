@@ -1,9 +1,10 @@
 from ctypes import addressof
 import struct
+import time
 from struct import unpack
 import x86
 from reclassparser import _TYPES
-from typing import Any, Dict, List, Sequence, TypeVar, cast
+from typing import Any, Dict, List, Sequence, TypeVar, cast, Generic
 import pymem
 from pymem import Pymem
 from helpers import PointerChain
@@ -50,12 +51,6 @@ def getTypeSize(_type: Dict[str, Any]) -> int:
 
 
 class Map(dict):
-    """
-    Example:
-    m = Map({'first_name': 'Eduardo'},
-            last_name='Pool', age=24, sports=['Soccer'])
-    """
-
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
         for arg in args:
@@ -69,6 +64,18 @@ class Map(dict):
 
     def __getattr__(self, attr):
         return self.get(attr)
+
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, Map):
+            return False
+        for k, v in self.items():
+            if k.startswith('_'):
+                continue
+            _o = o.get(k)
+            if _o != v:
+                return False
+
+        return True
 
     def __setattr__(self, key, value):
         _current = self.get(key)
@@ -97,11 +104,46 @@ class Map(dict):
         del self.__dict__[key]
 
 
+T = TypeVar('T')
+
+
+class ItemHistory(Generic[T]):
+    def __init__(self, maxCount: int = -1, maxAge: float = -1.0, updateInterval = -1.0, redundant=True):
+        self._items_: List[T] = []
+        self._redundant_: bool = redundant
+        self._updateInterval_: float = updateInterval
+        self._lastUpdate_:float = time.time()
+        if maxCount < 0 and maxAge < 0:
+            raise Exception('Requires at least one constraint!')
+        self._maxCount_ = maxCount
+        self._maxAge_ = maxAge
+
+    @property
+    def items(self) -> Sequence[T]:
+        return self._items_
+
+    def append(self, item: T):
+        if self._updateInterval_> 0 and (time.time() - self._lastUpdate_)< self._updateInterval_:
+            return
+        if not self._redundant_ and len(self._items_) > 0 and self._items_[-1] == item:
+            return
+        self._items_.append(item)
+        self._lastUpdate_ = time.time()
+        while self._maxCount_ > 0 and len(self._items_) > self._maxCount_:
+            self._items_.pop(0)
+
+    def update(self):
+        now = time.time()
+        while self._maxAge_ > 0 and len(self._items_) > 0 and (now - self._items_[0]._time) > self._maxAge_:
+            self._items_.pop(0)
+
+
 def unpackType(pm: Pymem, rawdata: bytes, addr: 0, baseOffset: 0, _type: Dict[str, Any]):
     ret = Map()
     ret['_type'] = _type
     ret['_pm'] = pm
     ret['_addr'] = addr + baseOffset
+    ret['_time'] = time.time()
 
     for name, meta in _type.items():  # for each field:
         if name.startswith('_'):
@@ -195,31 +237,6 @@ _fn_PlayerControl_RpcCompleteTask: ShellCode = x86.Assembler()\
     .addInt8ToEsp(0x0c)\
     .ret()\
     .assemble()
-
-# .sehPrologue('Component_get_Transform')\
-# .sehEpilogue('Component_get_Transform')\
-# .sehPrologue('Transform_get_Position')\
-# .sehEpilogue('Transform_get_Position')\
-# _fn_Component_get_Position: ShellCode = x86.Assembler()\
-#     .pushInt8(0)\
-#     .pushInt32Operand('pComponent')\
-#     .movInt32ToEaxOperand('pComponent_get_Transform')\
-#     .callEax()\
-#      .testEaxEax()\
-#    .jumpNotZeroLabel('pComponentValid')\
-#    .incEax()\
-#    .ret()\
-#    .label('pComponentValid')\
-#     .addInt8ToEsp(0x8)\
-#     .pushInt8(0)\
-#     .pushEax()\
-#     .pushInt32Operand('pTargetBuffer')\
-#     .movInt32ToEaxOperand('pTransform_get_Position')\
-#     .callEax()\
-#     .addInt8ToEsp(0xC)\
-#     .ret()\
-#     .assemble()\
-#     .addBuffer('pTargetBuffer', 12)
 
 _fn_Component_get_Position: ShellCode = x86.Assembler()\
     .sehPrologue('Component_get_Transform')\
@@ -326,38 +343,48 @@ class Game:
         self._localPlayer_: IFullPlayerControl = None
         self._allPlayers_: Sequence[IFullPlayerControl] = []
         self._injector_: ShellCodeInjector = None
+        # self._playerHistory_: Dict[int, ItemHistory[IFullPlayerControl]] = {
+        #    index: ItemHistory(maxCount=100) for index in range(0, 10)}
+        self._playerPositions_: Dict[int, ItemHistory[IVector2]] = {
+            i: ItemHistory(maxAge=30, redundant=False, updateInterval=1.0) for i in range(0, 10)}
+        self._playerAlive_: Dict[int, ItemHistory[bool]] = {
+            i: ItemHistory(maxCount=10, redundant=False) for i in range(0, 10)}
 
-    @ property
+    @property
     def pm(self) -> Pymem:
         return self._pm_
 
-    @ property
+    @property
     def gameAssemblyBase(self) -> int:
         return self._gameAssemblyBase_
 
-    @ property
+    @property
     def unityPlayerBase(self) -> int:
         return self._unityPlayerBase_
 
-    @ property
+    @property
     def gameOptions(self) -> IGameOptions:
         return self._gameOptions_
 
-    @ property
+    @property
     def shipStatus(self) -> IShipStatus:
         return self._shipStatus_
 
-    @ property
+    @property
     def playerControlStatic(self) -> IPlayerControlStatic:
         return self._playerControlStatic_
 
-    @ property
+    @property
     def localPlayer(self) -> IFullPlayerControl:
         return self._localPlayer_
 
-    @ property
+    @property
     def allPlayers(self) -> Sequence[IFullPlayerControl]:
         return self._allPlayers_
+
+    @property
+    def playerPositions(self) -> Dict[int, ItemHistory[IVector2]]:
+        return self._playerPositions_
 
     @property
     def shipRooms(self) -> Sequence[IPlainRoom]:
@@ -403,6 +430,12 @@ class Game:
             return False
 
         try:
+            for i in range(0, 10):
+                self._playerPositions_[i].update()
+                self._playerAlive_[i].update()
+            # for _, _history in self._playerHistory_.items():
+            #    _history.update()
+
             self._playerControlStatic_ = self._getPlayerControlStatic_()
             if not self._playerControlStatic_:
                 return False
@@ -415,6 +448,12 @@ class Game:
                 self._playerControlStatic_.pAllPlayerControls, DATA['STRUCTS']['PlayerControl'])
             self._allPlayers_ = [self._getFullPlayer_(
                 player) for player in _allPlayers]
+            for _player in self._allPlayers_:
+                pos = _player.NetworkTransform.TargetSyncPos if _player.PlayerId != GAME.localPlayer.PlayerId else _player.NetworkTransform.PrevPosSend
+                self._playerPositions_[_player.PlayerId].append(pos)
+                self._playerAlive_[_player.PlayerId].append(
+                    not _player.PlayerData.isDead)
+                # self._playerHistory_[_player.PlayerId].append(_player)
             # GameOptions
             self._gameOptions_ = self._getGameOptions_()
             # ShipStatus + Rooms

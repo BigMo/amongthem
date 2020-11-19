@@ -345,29 +345,11 @@ class Game:
             for i in range(0, 10):
                 self._playerPositions_[i].update()
                 self._playerAlive_[i].update()
-            # for _, _history in self._playerHistory_.items():
-            #    _history.update()
 
             self._playerControlStatic_ = self._getPlayerControlStatic_()
             if not self._playerControlStatic_:
                 return False
-            # Local player
-            _local = self._getPlayerControl_(
-                self._playerControlStatic_.pLocalPlayer)
-            self._localPlayer_ = self._getFullPlayer_(_local)
-            # All players
-            _allPlayers = self._getList_(
-                self._playerControlStatic_.pAllPlayerControls, DATA['STRUCTS']['PlayerControl'])
-            self._allPlayers_ = [self._getFullPlayer_(
-                player) for player in _allPlayers]
-            for _player in self._allPlayers_:
-                pos = _player.NetworkTransform.TargetSyncPos if _player.PlayerId != GAME.localPlayer.PlayerId else _player.NetworkTransform.PrevPosSend
-                self._playerPositions_[_player.PlayerId].append(pos)
-                self._playerAlive_[_player.PlayerId].append(
-                    not _player.PlayerData.isDead)
-                # self._playerHistory_[_player.PlayerId].append(_player)
-            # GameOptions
-            self._gameOptions_ = self._getGameOptions_()
+
             # ShipStatus + Rooms
             self._shipStatus_ = self._getShipStatus_()
             if self._shipStatus_:
@@ -381,7 +363,33 @@ class Game:
                 self._shipRooms_ = [readType(
                     self._pm_, _addr, DATA['STRUCTS']['PlainShipRoom']) for _addr in _roomAddresses]
 
+            # Local player
+            _local = self._getPlayerControl_(
+                self._playerControlStatic_.pLocalPlayer)
+            self._localPlayer_ = self._getFullPlayer_(_local)
+
+            # All players
+            _allPlayers = self._getList_(
+                self._playerControlStatic_.pAllPlayerControls, DATA['STRUCTS']['PlayerControl'])
+            self._allPlayers_ = [self._getFullPlayer_(
+                player) for player in _allPlayers]
+            for _player in self._allPlayers_:
+                pos = _player.NetworkTransform.TargetSyncPos if _player.PlayerId != GAME.localPlayer.PlayerId else _player.NetworkTransform.PrevPosSend
+                self._playerPositions_[_player.PlayerId].append(pos)
+                self._playerAlive_[_player.PlayerId].append(
+                    not _player.PlayerData.isDead)
+
+            # GameOptions
+            self._gameOptions_ = self._getGameOptions_()
+
         except Exception as e:
+            self._playerControlStatic_ = None
+            self._shipStatus_ = None
+            self._shipRooms_ = []
+            self._localPlayer_ = None
+            self._allPlayers_ = []
+            self._playerPositions_ = []
+            self._playerAlive_ = []
             return False
 
         return True

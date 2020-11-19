@@ -19,8 +19,6 @@ pLocalPos = PointerChain([0x01277F00, 0x20, 0x34, 0x4, 0x40, 0])
 
 
 def calcTypeSize(_type: Dict[str, Any]) -> int:
-    size = 0
-
     highestField = next(
         iter(sorted(_type.items(), key=lambda i: i[1]['offset'], reverse=True)), None)
     if not highestField:
@@ -29,7 +27,7 @@ def calcTypeSize(_type: Dict[str, Any]) -> int:
     data = highestField[1]
     _type = data.get('unpack')
     if _type:
-        return data.get('offset') + 8
+        return data.get('offset')
     else:
         _type = data.get('type')
         if not _type:
@@ -255,8 +253,6 @@ class Game:
         self._localPlayer_: IFullPlayerControl = None
         self._allPlayers_: Sequence[IFullPlayerControl] = []
         self._injector_: ShellCodeInjector = None
-        # self._playerHistory_: Dict[int, ItemHistory[IFullPlayerControl]] = {
-        #    index: ItemHistory(maxCount=100) for index in range(0, 10)}
         self._playerPositions_: Dict[int, ItemHistory[IVector2]] = {
             i: ItemHistory(maxAge=30, redundant=False, updateInterval=1.0) for i in range(0, 10)}
         self._playerAlive_: Dict[int, ItemHistory[bool]] = {

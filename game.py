@@ -27,7 +27,7 @@ def calcTypeSize(_type: Dict[str, Any]) -> int:
     data = highestField[1]
     _type = data.get('unpack')
     if _type:
-        return data.get('offset')
+        return data.get('offset') + struct.calcsize(data.get('unpack'))
     else:
         _type = data.get('type')
         if not _type:
@@ -64,6 +64,7 @@ def unpackType(pm: Pymem, rawdata: bytes, addr: 0, baseOffset: 0, _type: Dict[st
         if _unpack:  # primitive type: unpack raw bytes
             start = baseOffset + _offset
             end = baseOffset + _offset + struct.calcsize(_unpack)
+            buffer = rawdata[start: end]
             ret[name] = struct.unpack(_unpack, rawdata[start: end])[0]
         else:  # type
             _fieldType = meta.get('type')
@@ -336,7 +337,6 @@ class Game:
     def update(self) -> bool:
         if not self.initialized:
             return False
-
         try:
             for i in range(0, 10):
                 self._playerPositions_[i].update()

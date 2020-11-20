@@ -1,4 +1,4 @@
-from time import struct_time
+import struct
 import time
 from types import FunctionType
 from typing import Callable, Generic, List, Sequence, TypeVar
@@ -78,7 +78,7 @@ class Map(dict):
         _pm: Pymem = self.get('_pm')
         _type = self.get('_type')
         _addr = self.get('_addr')
-        _bytes = struct_time.pack(_type[key]['unpack'], value)
+        _bytes = struct.pack(_type[key]['unpack'], value)
         _pm.write_bytes(_addr + _type[key]['offset'], _bytes, len(_bytes))
 
     def __setitem__(self, key, value):

@@ -37,6 +37,7 @@ MAPS = {
 }
 
 ANONYMOUS = True
+SHOWGHOSTS = True
 
 DEADPLAYERS = []
 
@@ -50,6 +51,7 @@ UI_TEXT = """Hotkeys:
 [F5] - TP to room
 [F6] - Complete all tasks
 [F7] - Anonymous Mode on/off
+[F8] - Show Ghosts on/off
 [F11] - Quit
 """
 
@@ -66,6 +68,7 @@ def drawmap(_canvas_: Canvas):
     global MAPS
     global ANONYMOUS
     global DEADPLAYERS
+    global SHOWGHOSTS
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
 
@@ -74,7 +77,7 @@ def drawmap(_canvas_: Canvas):
         scale = (map['image'].width(
         ) / map['size'][0], map['image'].height() / map['size'][1])
         if _canvas_.winfo_width() != size[0] or _canvas_.winfo_height() != size[1]:
-            _canvas_.config(width=size[0], height=size[1]+200)
+            _canvas_.config(width=size[0], height=size[1]+220)
 
         center = map['center']
 
@@ -117,9 +120,10 @@ def drawmap(_canvas_: Canvas):
                         _canvas_, drawposDead[0], drawposDead[1], 10, outline="#f11", fill="#f2ff00", width=1)
                     _canvas_.create_text(drawposDead[0] + 10, drawposDead[1], anchor=W, font="Arial",
                                         text=f'KILLED\n{int(timediff)}s ago')
-                _create_circle(
-                    _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#000000", width=1)
-                _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
+                if timediff > 5 and drawposDead != drawpos and SHOWGHOSTS:
+                    _create_circle(
+                        _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#000000", width=1)
+                    _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
                                      text='GHOST')
             elif ANONYMOUS:
                 _create_circle(
@@ -164,7 +168,7 @@ def draw(_canvas_: Canvas):
 
     drawmap(_canvas_)
 
-    _canvas_.create_text(5, _canvas_.winfo_height() - 200,
+    _canvas_.create_text(5, _canvas_.winfo_height() - 220,
                          anchor=NW, font="Arial", text=UI_TEXT)
 
     _targetPlayer = currentTpTarget()
@@ -264,6 +268,11 @@ def hackerino():
     def cbAnonymousMode():
         global ANONYMOUS
         ANONYMOUS = not ANONYMOUS
+
+    def cbShowGhotsts():
+        global SHOWGHOSTS
+        SHOWGHOSTS = not SHOWGHOSTS
+
     _speed = Hotkeys('shift',
                      lambda e: setSpeed(3.0),
                      lambda e: setSpeed(1.0))
@@ -281,6 +290,7 @@ def hackerino():
     # _randomHat = Hotkeys('f1', lambda e: cbRandomizePlayer())
     _anonMode = Hotkeys('f7', lambda e: cbAnonymousMode())
     #_test = Hotkeys('f1', lambda e: cbRandomizePlayer())
+    _showGhosts = Hotkeys('f8', lambda e: cbShowGhotsts())
 
     while True:
         if not GAME.update():

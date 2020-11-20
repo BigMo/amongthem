@@ -11,6 +11,16 @@ DATA = {
         'PlayerControl_RpcSetSkin': 0x623380,
         'PlayerControl_RpcCompleteTask': 0x622A70
     },
+    'PATTERNS':{
+        'PlayerControlsStatic': {
+            'pattern': b'\x5F\x5B\xA1\x00\x00\x00\x00\xF6\x80',
+            'offset': 3
+        },
+        'ShipStatusStatic':{
+            'pattern': b'\x74\x00\xA1\x00\x00\x00\x00\x8B\x40\x5C\x8B\x30\x85\xF6',
+            'offset': 3
+        }
+    },
     'STRUCTS': {
         'PlayerControlStatic': {
             "pAllPlayerControls": {

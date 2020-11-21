@@ -269,7 +269,7 @@ def hackerino():
         global ANONYMOUS
         ANONYMOUS = not ANONYMOUS
 
-    def cbShowGhotsts():
+    def cbShowGhosts():
         global SHOWGHOSTS
         SHOWGHOSTS = not SHOWGHOSTS
 
@@ -290,7 +290,7 @@ def hackerino():
     # _randomHat = Hotkeys('f1', lambda e: cbRandomizePlayer())
     _anonMode = Hotkeys('f7', lambda e: cbAnonymousMode())
     #_test = Hotkeys('f1', lambda e: cbRandomizePlayer())
-    _showGhosts = Hotkeys('f8', lambda e: cbShowGhotsts())
+    _showGhosts = Hotkeys('f8', lambda e: cbShowGhosts())
 
     while True:
         if not GAME.update():

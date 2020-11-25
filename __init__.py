@@ -50,7 +50,7 @@ UI_TEXT = """Hotkeys:
 [F5] - TP to room
 [F6] - Complete all tasks
 [F7] - Anonymous Mode on/off
-[F11] - Quit
+[F10] - Quit
 """
 
 
@@ -106,7 +106,8 @@ def drawmap(_canvas_: Canvas):
             pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
             if deadPlayer:
                 deadPlayerObj = getDeadPlayer(p)
-                drawposDead = translateVec(deadPlayerObj.NetworkTransform.TargetSyncPos)
+                drawposDead = translateVec(
+                    deadPlayerObj.NetworkTransform.TargetSyncPos)
 
             drawpos = translateVec(pos)
 
@@ -116,7 +117,7 @@ def drawmap(_canvas_: Canvas):
                     _create_circle(
                         _canvas_, drawposDead[0], drawposDead[1], 10, outline="#f11", fill="#f2ff00", width=1)
                     _canvas_.create_text(drawposDead[0] + 10, drawposDead[1], anchor=W, font="Arial",
-                                        text=f'KILLED\n{int(timediff)}s ago')
+                                         text=f'KILLED\n{int(timediff)}s ago')
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#000000", width=1)
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
@@ -295,7 +296,7 @@ def hackerino():
 
 
 def main():
-    _quit = Hotkeys('f11', lambda e: os.kill(os.getpid(), signal.SIGTERM))
+    _quit = Hotkeys('f10', lambda e: os.kill(os.getpid(), signal.SIGTERM))
     print("Initializing Game...")
 
     drawthread = Thread(None, updateGraph, 'draw')

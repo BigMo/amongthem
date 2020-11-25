@@ -12,9 +12,10 @@ from x86 import ShellCode, ShellCodeInjector
 from gametypes import *
 from gamedata import DATA
 
-pPlayerControlStatic = PointerChain([0x144bb70, 0x5c, 0])
-pShipStatusStatic = PointerChain([0x144BB58, 0x5c, 0, 0])
-pGameOptions = PointerChain([0x0144BB70, 0x5c, 4, 0])
+#pPlayerControlStatic = PointerChain([0x144bb70, 0x5c, 0])
+pPlayerControlStatic = PointerChain([0x143BFC0, 0x5c, 0])
+pShipStatusStatic = PointerChain([0x143C110, 0x5c, 0, 0])
+pGameOptions = PointerChain([0x143BAA4, 0x5c, 4, 0])
 pLocalPos = PointerChain([0x01277F00, 0x20, 0x34, 0x4, 0x40, 0])
 
 
@@ -376,7 +377,11 @@ class Game:
                     not _player.PlayerData.isDead)
 
             # GameOptions
-            self._gameOptions_ = self._getGameOptions_()
+            self._gameOptions_ = readType(
+                self._pm_,
+                self._playerControlStatic_.pGameOptions,
+                DATA['STRUCTS']['GameOptions']
+            )  # self._getGameOptions_()
 
         except Exception as e:
             self._playerControlStatic_ = None

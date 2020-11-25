@@ -1,22 +1,22 @@
 DATA = {
     'OFFSETS': {
-        'Component_get_Transform': 0x464A10,
-        'Component_get_GameObject': 0x464980,
-        'Transform_get_Position': 0x4477D0,
-        'Transform_set_Position': 0x447C80,
-        'GameObject_get_Layer': 0x466E00,
-        'GameObject_set_Layer': 0x466E90,
-        'PlayerControl_RpcSetHat': 0x622F60,
-        'PlayerControl_RpcSetPet': 0x6231F0,
-        'PlayerControl_RpcSetSkin': 0x623380,
-        'PlayerControl_RpcCompleteTask': 0x622A70
+        'Component_get_Transform': 0x40D4C0,
+        'Component_get_GameObject': 0x40D430,
+        'Transform_get_Position': 0x45A4C0,
+        'Transform_set_Position': 0x45A910,
+        'GameObject_get_Layer': 0x40F8C0,
+        'GameObject_set_Layer': 0x40F950,
+        'PlayerControl_RpcSetHat': 0x6C8FC0,
+        'PlayerControl_RpcSetPet': 0x6C9250,
+        'PlayerControl_RpcSetSkin': 0x6C93E0,
+        'PlayerControl_RpcCompleteTask': 0x6C8AD0
     },
-    'PATTERNS':{
+    'PATTERNS': {
         'PlayerControlsStatic': {
-            'pattern': b'\x5F\x5B\xA1\x00\x00\x00\x00\xF6\x80',
+            'pattern': b'\x5F\x5B\xA1\x00\x00\x00\x00\xF6\x80', # FUCKING SUCKS
             'offset': 3
         },
-        'ShipStatusStatic':{
+        'ShipStatusStatic': {
             'pattern': b'\x74\x00\xA1\x00\x00\x00\x00\x8B\x40\x5C\x8B\x30\x85\xF6',
             'offset': 3
         }

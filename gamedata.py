@@ -13,12 +13,12 @@ DATA = {
     },
     'PATTERNS': {
         'PlayerControlsStatic': {
-            'pattern': b'\x5F\x5B\xA1\x00\x00\x00\x00\xF6\x80', # FUCKING SUCKS
-            'offset': 3
+            'pattern': '6A 00 53 50 E8 ? ? ? ? A1 ? ? ? ? 83 C4 0C',
+            'offset': 5
         },
         'ShipStatusStatic': {
-            'pattern': b'\x74\x00\xA1\x00\x00\x00\x00\x8B\x40\x5C\x8B\x30\x85\xF6',
-            'offset': 3
+            'pattern': '89 46 3C A1 ? ? ? ? 8B 40 5C 8B 00 85 C0 74',
+            'offset': 4
         }
     },
     'STRUCTS': {

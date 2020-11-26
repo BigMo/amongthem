@@ -17,6 +17,7 @@ pPlayerControlStatic = PointerChain([0x143BFC0, 0x5c, 0])
 pShipStatusStatic = PointerChain([0x143C110, 0x5c, 0, 0])
 pGameOptions = PointerChain([0x143BAA4, 0x5c, 4, 0])
 pLocalPos = PointerChain([0x01277F00, 0x20, 0x34, 0x4, 0x40, 0])
+# Camera: 0x1428008
 
 
 def calcTypeSize(_type: Dict[str, Any]) -> int:

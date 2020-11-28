@@ -41,21 +41,21 @@ MAPS = {
 
 ANONYMOUS = True
 SHOWGHOSTS = True
+CLICKTP = False
+SPEED = 2.0
 
 DEADPLAYERS = []
 
 UI_TEXT = """Hotkeys:
 [Shift] - Hold for Speedhack
-[F1] - Impostor on/off
+[Plus] - Increase Speed +0.5
+[Ctrl] - Hold for Click TP
 [Alt] - Noclip on/off
-[F2] - Select TP Target
-[F3] - TP to target
-[F4] - Select TP room
-[F5] - TP to room
-[F6] - Complete all tasks
-[F7] - Anonymous Mode on/off
-[F8] - Show Ghosts on/off
-[F11] - Quit
+[F1] - Impostor on/off
+[F2] - Complete all tasks
+[F3] - Anonymous Mode on/off
+[F4] - Show Ghosts on/off
+[F10] - Quit
 """
 
 
@@ -72,15 +72,19 @@ def drawmap(_canvas_: Canvas):
     global ANONYMOUS
     global DEADPLAYERS
     global SHOWGHOSTS
+    global SPEED
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
+
+    _canvas_.create_text(_canvas_.winfo_width()- 80, _canvas_.winfo_height() - 10, anchor=W, font="Arial",
+                                        text=f'Speed: {SPEED}')
 
     if map:
         size = (map['image'].width(), map['image'].height())
         scale = (map['image'].width(
         ) / map['size'][0], map['image'].height() / map['size'][1])
         if _canvas_.winfo_width() != size[0] or _canvas_.winfo_height() != size[1]:
-            _canvas_.config(width=size[0], height=size[1]+220)
+            _canvas_.config(width=size[0], height=size[1]+190)
 
         center = map['center']
 
@@ -100,7 +104,7 @@ def drawmap(_canvas_: Canvas):
                     dpts = [translateVec(p) for p in _his.items]
                     pts = [p for v in dpts for p in v]
                     _canvas_.create_line(
-                        *pts, fill="#f11", width=3, smooth=True)
+                        *pts, fill=COLORS[p.PlayerData.colorId], width=3, smooth=True)
                     _canvas_.create_line(
                         *pts, fill=COLORS[p.PlayerData.colorId], smooth=True)
         if len(GAME.allPlayers) == 0:
@@ -164,6 +168,18 @@ def manageDeadPlayer(p):
         DEADPLAYERS.append(p)
     return found
 
+def translateVecBack(event) -> Tuple[float, float]:
+    map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
+    if map:
+        scale = (map['image'].width(
+            ) / map['size'][0], map['image'].height() / map['size'][1])
+
+        center = map['center']
+        x =  (event.x - center[0]) / scale[0]
+        y =  (center[1] - event.y) / scale[1]
+        return StaticVector(x,y)
+    else:
+        return StaticVector(0,0)
 
 def draw(_canvas_: Canvas):
     _canvas_.delete('all')
@@ -172,20 +188,8 @@ def draw(_canvas_: Canvas):
 
     drawmap(_canvas_)
 
-    _canvas_.create_text(5, _canvas_.winfo_height() - 220,
+    _canvas_.create_text(5, _canvas_.winfo_height() - 190,
                          anchor=NW, font="Arial", text=UI_TEXT)
-
-    _targetPlayer = currentTpTarget()
-    _targetRoom = currentTpTargetRoom()
-    _tpTargets = 'Targets:\n'
-    if _targetPlayer:
-        _tpTargets += f'TP-Target: {_targetPlayer.Name}\n'
-
-    if _targetRoom:
-        _tpTargets += f'TP-Target-Room: {DATA["CONSTS"]["SYSTEM_TYPES"][_targetRoom.SystemType]}'
-
-    _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 200, anchor=NE, font='Arial',
-                         text=_tpTargets)
 
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))
@@ -196,14 +200,22 @@ def loadImage(path: str, scale: float) -> ImageTk.PhotoImage:
     image = image.resize((int(image.width * scale), int(image.height * scale)))
     return ImageTk.PhotoImage(image)
 
-
 def updateGraph():
     root = Tk()
     global MAPS
+
+    def cbTpToClick(event):
+        global CLICKTP
+        if CLICKTP:
+            pos = translateVecBack(event)
+            if pos.X != 0 and pos.Y != 0 and GAME.localPlayer:
+                GAME.setComponentPosition(GAME.localPlayer._addr, pos)
+
     MAPS[0]['image'] = loadImage('./map0.png', 0.5)
     MAPS[1]['image'] = loadImage('./map1.png', 0.5)
     MAPS[2]['image'] = loadImage('./map2.png', 0.5)
     canvas = Canvas(root)  # , width=SIZE[0], height=SIZE[1])
+    canvas.bind("<Button-1>", cbTpToClick)
     canvas.grid()
     canvas.config(bg='white')
     draw(canvas)
@@ -221,27 +233,8 @@ ZERO: StaticVector = StaticVector(0.0, 0.0)
 def hackerino():
     global TPTARGETPL
     global ZERO
+    global SPEED
     lastprint = time.time()
-
-    def cbTpTargetCountUp():
-        global TPTARGETPL
-        TPTARGETPL = (TPTARGETPL + 1) % len(GAME.allPlayers)
-
-    def cbTpTargetRoomCountUp():
-        global TPTARGETRO
-        TPTARGETRO = (TPTARGETRO + 1) % len(GAME.shipRooms)
-
-    def cbTpToTarget():
-        _target = currentTpTarget()
-        if _target and GAME.localPlayer:
-            _pos = GAME.getComponentPosition(_target._addr)
-            GAME.setComponentPosition(GAME.localPlayer._addr, _pos)
-
-    def cbTpToTargetRoom():
-        _target = currentTpTargetRoom()
-        if _target and GAME.localPlayer:
-            _pos = GAME.getComponentPosition(_target.pRoomArea)
-            GAME.setComponentPosition(GAME.localPlayer._addr, _pos)
 
     def setSpeed(speed):
         if GAME.gameOptions:
@@ -277,24 +270,30 @@ def hackerino():
         global SHOWGHOSTS
         SHOWGHOSTS = not SHOWGHOSTS
 
+    def cbClickTp(val):
+        global CLICKTP
+        CLICKTP = val
+
+    def cbChangeSpeed():
+        global SPEED
+        SPEED = SPEED + 0.5 if SPEED <= 2.5 else 1.0
+
     _speed = Hotkeys('shift',
-                     lambda e: setSpeed(3.0),
+                     lambda e: setSpeed(SPEED),
                      lambda e: setSpeed(1.0))
     _speed = Hotkeys('alt',
                      lambda e: cbToggleNoClip())
     _impostor = Hotkeys('f1',
                         lambda e: cbToggleImpostor())
-    _targetUp = Hotkeys('f2', lambda e: cbTpTargetCountUp())
-    _tpToTarget = Hotkeys('f3', lambda e: cbTpToTarget())
-
-    _targetUpRo = Hotkeys('f4', lambda e: cbTpTargetRoomCountUp())
-    _tpToTargetRo = Hotkeys('f5', lambda e: cbTpToTargetRoom())
-
-    _completeTasks = Hotkeys('f6', lambda e: cbCompleteTasks())
+    _completeTasks = Hotkeys('f2', lambda e: cbCompleteTasks())
     # _randomHat = Hotkeys('f1', lambda e: cbRandomizePlayer())
-    _anonMode = Hotkeys('f7', lambda e: cbAnonymousMode())
+    _anonMode = Hotkeys('f3', lambda e: cbAnonymousMode())
     #_test = Hotkeys('f1', lambda e: cbRandomizePlayer())
-    _showGhosts = Hotkeys('f8', lambda e: cbShowGhosts())
+    _showGhosts = Hotkeys('f4', lambda e: cbShowGhosts())
+    _speedVal = Hotkeys('plus', lambda e: cbChangeSpeed())
+    _clickTp = Hotkeys('ctrl',
+                     lambda e: cbClickTp(True),
+                     lambda e: cbClickTp(False))
 
     while True:
         if not GAME.update():
@@ -309,7 +308,7 @@ def hackerino():
 
 
 def main():
-    _quit = Hotkeys('f10', lambda e: os.kill(os.getpid(), signal.SIGTERM))
+    _quit = Hotkeys('f12', lambda e: os.kill(os.getpid(), signal.SIGTERM))
     print("Initializing Game...")
 
     drawthread = Thread(None, updateGraph, 'draw')

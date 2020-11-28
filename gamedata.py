@@ -14,10 +14,13 @@ DATA = {
     'PATTERNS': {
         'PlayerControlsStatic': {
             'pattern': '6A 00 53 50 E8 ? ? ? ? A1 ? ? ? ? 83 C4 0C',
+            #'bytes': b'\x6A.\x53\x50\xE8....\xA1....\x83\xC4\x0C',
+            'bytes': b'\x85\xC9\x0F\x84....\xA1....\x6A\x00\x6A.\x8B\x40\x5C',
             'offset': 5
         },
         'ShipStatusStatic': {
             'pattern': '89 46 3C A1 ? ? ? ? 8B 40 5C 8B 00 85 C0 74',
+            'bytes': b'\x89\x46\x3C\xA1....\x8B\x40\x5C\x8B\x00\x85\xC0\x74',
             'offset': 4
         }
     },

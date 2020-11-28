@@ -7,6 +7,9 @@ from PIL import ImageTk, Image
 from threading import Thread
 from tkinter import Tk, Canvas, W, NW, SW, SE, NE
 
+from pymem import Pymem, pattern
+import pymem
+
 from gamedata import DATA
 from gametypes import IPlainRoom
 from game import GAME, StaticVector
@@ -120,12 +123,12 @@ def drawmap(_canvas_: Canvas):
                     _create_circle(
                         _canvas_, drawposDead[0], drawposDead[1], 10, outline="#f11", fill="#f2ff00", width=1)
                     _canvas_.create_text(drawposDead[0] + 10, drawposDead[1], anchor=W, font="Arial",
-                                        text=f'KILLED\n{int(timediff)}s ago')
+                                         text=f'KILLED\n{int(timediff)}s ago')
                 if timediff > 5 and drawposDead != drawpos and SHOWGHOSTS:
                     _create_circle(
                         _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#000000", width=1)
                     _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
-                                     text='GHOST')
+                                         text='GHOST')
             elif ANONYMOUS:
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[7], width=1)

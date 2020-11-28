@@ -15,8 +15,8 @@ from gamedata import DATA
 #pPlayerControlStatic = PointerChain([0x144bb70, 0x5c, 0])
 pPlayerControlStatic = PointerChain([0x143BFC0, 0x5c, 0])
 pShipStatusStatic = PointerChain([0x143C110, 0x5c, 0, 0])
-pGameOptions = PointerChain([0x143BAA4, 0x5c, 4, 0])
-pLocalPos = PointerChain([0x01277F00, 0x20, 0x34, 0x4, 0x40, 0])
+# pGameOptions = PointerChain([0x143BAA4, 0x5c, 4, 0])
+# pLocalPos = PointerChain([0x01277F00, 0x20, 0x34, 0x4, 0x40, 0])
 # Camera: 0x1428008
 
 
@@ -560,9 +560,9 @@ class Game:
     def _readLocalPosIdx_(self, _localPosBase: int, _idx: int) -> ILocalPos:
         return self._readLocalPosAddr_(_localPosBase + 0x100 * _idx)
 
-    def _getGameOptions_(self) -> IGameOptions:
-        addr = pGameOptions.resolve(self._pm_, self._gameAssemblyBase_)
-        return readType(self._pm_, addr, DATA['STRUCTS']['GameOptions'])
+    # def _getGameOptions_(self) -> IGameOptions:
+    #    addr = pGameOptions.resolve(self._pm_, self._gameAssemblyBase_)
+    #    return readType(self._pm_, addr, DATA['STRUCTS']['GameOptions'])
 
 
 GAME: Game = Game()

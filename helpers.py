@@ -125,3 +125,6 @@ class ItemHistory(Generic[T]):
         now = time.time()
         while self._maxAge_ > 0 and len(self._items_) > 0 and (now - self._items_[0]._time) > self._maxAge_:
             self._items_.pop(0)
+
+    def clear(self):
+        self._items_.clear()

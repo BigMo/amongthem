@@ -76,8 +76,8 @@ def drawmap(_canvas_: Canvas):
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
 
-    _canvas_.create_text(_canvas_.winfo_width()- 80, _canvas_.winfo_height() - 10, anchor=W, font="Arial",
-                                        text=f'Speed: {SPEED}')
+    _canvas_.create_text(_canvas_.winfo_width() - 80, _canvas_.winfo_height() - 10, anchor=W, font="Arial",
+                         text=f'Speed: {SPEED}')
 
     if map:
         size = (map['image'].width(), map['image'].height())
@@ -168,18 +168,20 @@ def manageDeadPlayer(p):
         DEADPLAYERS.append(p)
     return found
 
-def translateVecBack(event) -> Tuple[float, float]:
+
+def translateVecBack(event) -> StaticVector:
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
     if map:
         scale = (map['image'].width(
-            ) / map['size'][0], map['image'].height() / map['size'][1])
+        ) / map['size'][0], map['image'].height() / map['size'][1])
 
         center = map['center']
-        x =  (event.x - center[0]) / scale[0]
-        y =  (center[1] - event.y) / scale[1]
-        return StaticVector(x,y)
+        x = (event.x - center[0]) / scale[0]
+        y = (center[1] - event.y) / scale[1]
+        return StaticVector(x, y)
     else:
-        return StaticVector(0,0)
+        return StaticVector(0, 0)
+
 
 def draw(_canvas_: Canvas):
     _canvas_.delete('all')
@@ -200,6 +202,7 @@ def loadImage(path: str, scale: float) -> ImageTk.PhotoImage:
     image = image.resize((int(image.width * scale), int(image.height * scale)))
     return ImageTk.PhotoImage(image)
 
+
 def updateGraph():
     root = Tk()
     global MAPS
@@ -214,7 +217,7 @@ def updateGraph():
     MAPS[0]['image'] = loadImage('./map0.png', 0.5)
     MAPS[1]['image'] = loadImage('./map1.png', 0.5)
     MAPS[2]['image'] = loadImage('./map2.png', 0.5)
-    canvas = Canvas(root)  # , width=SIZE[0], height=SIZE[1])
+    canvas = Canvas(root)
     canvas.bind("<Button-1>", cbTpToClick)
     canvas.grid()
     canvas.config(bg='white')
@@ -222,7 +225,6 @@ def updateGraph():
     root.lift()
     root.attributes('-topmost', True)
     root.attributes('-alpha', 0.6)
-    # root.wm_attributes("-transparentcolor", "white")
     root.wm_title('[amongthem] by Zat & itsEzz')
     root.mainloop()
 
@@ -250,11 +252,6 @@ def hackerino():
     def cbToggleImpostor():
         if GAME.localPlayer:
             GAME.localPlayer.PlayerData.isImpostor = 1 if not GAME.localPlayer.PlayerData.isImpostor else 0
-
-    def cbRandomizePlayer():
-        GAME.rpcSetHat(int(random.randrange(0, 93)))
-        GAME.rpcSetPet(int(random.randrange(0, 10)))
-        GAME.rpcSetSkin(int(random.randrange(0, 10)))
 
     def cbToggleNoClip():
         _go = GAME.getGameObject(GAME.localPlayer._addr)
@@ -286,14 +283,12 @@ def hackerino():
     _impostor = Hotkeys('f1',
                         lambda e: cbToggleImpostor())
     _completeTasks = Hotkeys('f2', lambda e: cbCompleteTasks())
-    # _randomHat = Hotkeys('f1', lambda e: cbRandomizePlayer())
     _anonMode = Hotkeys('f3', lambda e: cbAnonymousMode())
-    #_test = Hotkeys('f1', lambda e: cbRandomizePlayer())
     _showGhosts = Hotkeys('f4', lambda e: cbShowGhosts())
     _speedVal = Hotkeys('plus', lambda e: cbChangeSpeed())
     _clickTp = Hotkeys('ctrl',
-                     lambda e: cbClickTp(True),
-                     lambda e: cbClickTp(False))
+                       lambda e: cbClickTp(True),
+                       lambda e: cbClickTp(False))
 
     while True:
         if not GAME.update():
@@ -308,7 +303,7 @@ def hackerino():
 
 
 def main():
-    _quit = Hotkeys('f12', lambda e: os.kill(os.getpid(), signal.SIGTERM))
+    _quit = Hotkeys('f10', lambda e: os.kill(os.getpid(), signal.SIGTERM))
     print("Initializing Game...")
 
     drawthread = Thread(None, updateGraph, 'draw')

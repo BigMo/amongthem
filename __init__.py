@@ -214,6 +214,10 @@ def updateGraph():
             if pos.X != 0 and pos.Y != 0 and GAME.localPlayer:
                 GAME.setComponentPosition(GAME.localPlayer._addr, pos)
 
+    def on_closing():
+        root.destroy()
+        os.kill(os.getpid(), signal.SIGTERM)
+
     MAPS[0]['image'] = loadImage('./map0.png', 0.5)
     MAPS[1]['image'] = loadImage('./map1.png', 0.5)
     MAPS[2]['image'] = loadImage('./map2.png', 0.5)
@@ -226,6 +230,7 @@ def updateGraph():
     root.attributes('-topmost', True)
     root.attributes('-alpha', 0.6)
     root.wm_title('[amongthem] by Zat & itsEzz')
+    root.protocol("WM_DELETE_WINDOW", on_closing)
     root.mainloop()
 
 

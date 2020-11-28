@@ -11,7 +11,7 @@ from helpers import ItemHistory, Map, PointerChain
 from x86 import ShellCode, ShellCodeInjector
 from gametypes import *
 from gamedata import DATA
-
+ 
 pPlayerControlStatic = PointerChain([0x143BFC0, 0x5c, 0])
 pShipStatusStatic = PointerChain([0x143C110, 0x5c, 0, 0])
 

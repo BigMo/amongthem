@@ -390,8 +390,10 @@ class Game:
             self._shipRooms_ = []
             self._localPlayer_ = None
             self._allPlayers_ = []
-            self._playerPositions_.clear()
-            self._playerAlive_.clear()
+            for _, his in self._playerPositions_.items():
+                his.clear()
+            for _, his in self._playerAlive_.items():
+                his.clear()
             return False
 
         return True

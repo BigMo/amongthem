@@ -42,6 +42,8 @@ MAPS = {
 ANONYMOUS = True
 SHOWGHOSTS = True
 CLICKTP = False
+REVEALIMPOSTER = False
+WALKPATH = True
 SPEED = 2.0
 
 DEADPLAYERS = []
@@ -55,6 +57,8 @@ UI_TEXT = """Hotkeys:
 [F2] - Complete all tasks
 [F3] - Anonymous Mode on/off
 [F4] - Show Ghosts on/off
+[F5] - Reveal Imposter
+[F6] - Walk path on/off
 [F10] - Quit
 """
 
@@ -73,6 +77,8 @@ def drawmap(_canvas_: Canvas):
     global DEADPLAYERS
     global SHOWGHOSTS
     global SPEED
+    global REVEALIMPOSTER
+    global WALKPATH
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
 
@@ -84,7 +90,7 @@ def drawmap(_canvas_: Canvas):
         scale = (map['image'].width(
         ) / map['size'][0], map['image'].height() / map['size'][1])
         if _canvas_.winfo_width() != size[0] or _canvas_.winfo_height() != size[1]:
-            _canvas_.config(width=size[0], height=size[1]+190)
+            _canvas_.config(width=size[0], height=size[1]+220)
 
         center = map['center']
 
@@ -97,7 +103,7 @@ def drawmap(_canvas_: Canvas):
             return (center[0] + vec.X * scale[0],
                     (center[1] - vec.Y * scale[1]))
 
-        if not ANONYMOUS:
+        if not ANONYMOUS and WALKPATH:
             for p in [p for p in GAME.allPlayers if not p.PlayerData.isDead]:
                 _his = GAME.playerPositions.get(p.PlayerId)
                 if _his and len(_his.items) > 1:
@@ -113,6 +119,7 @@ def drawmap(_canvas_: Canvas):
             deadPlayer = manageDeadPlayer(p)
             drawposDead = None
             deadPlayerObj = None
+            playerName = p.Name
             pos = p.NetworkTransform.TargetSyncPos if p.PlayerId != GAME.localPlayer.PlayerId else p.NetworkTransform.PrevPosSend
             if deadPlayer:
                 deadPlayerObj = getDeadPlayer(p)
@@ -121,6 +128,8 @@ def drawmap(_canvas_: Canvas):
 
             drawpos = translateVec(pos)
 
+            if REVEALIMPOSTER and p.PlayerData.isImpostor:
+                playerName = f'{p.Name} [IMP]'
             if deadPlayer:
                 timediff = time.time() - deadPlayerObj.killTimer
                 if timediff < 40:
@@ -140,8 +149,7 @@ def drawmap(_canvas_: Canvas):
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[p.PlayerData.colorId], width=1)
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
-                                     text=f'{p.Name}\n{"DEAD" if p.PlayerData.isDead else ""}')
-
+                                     text=f'{playerName}\n{"DEAD" if p.PlayerData.isDead else ""}')
 
 def getDeadPlayer(p):
     global DEADPLAYERS
@@ -190,7 +198,7 @@ def draw(_canvas_: Canvas):
 
     drawmap(_canvas_)
 
-    _canvas_.create_text(5, _canvas_.winfo_height() - 190,
+    _canvas_.create_text(5, _canvas_.winfo_height() - 220,
                          anchor=NW, font="Arial", text=UI_TEXT)
 
     _canvas_.update_idletasks()
@@ -280,6 +288,14 @@ def hackerino():
         global SPEED
         SPEED = SPEED + 0.5 if SPEED <= 2.5 else 1.0
 
+    def cbRevealImposter():
+        global REVEALIMPOSTER
+        REVEALIMPOSTER = not REVEALIMPOSTER
+
+    def cbWalkPath():
+        global WALKPATH
+        WALKPATH = not WALKPATH
+
     _speed = Hotkeys('shift',
                      lambda e: setSpeed(SPEED),
                      lambda e: setSpeed(1.0))
@@ -294,6 +310,8 @@ def hackerino():
     _clickTp = Hotkeys('ctrl',
                        lambda e: cbClickTp(True),
                        lambda e: cbClickTp(False))
+    _revealImposter = Hotkeys('f5', lambda e: cbRevealImposter())
+    _walkPath = Hotkeys('f6', lambda e: cbWalkPath())
 
     while True:
         if not GAME.update():

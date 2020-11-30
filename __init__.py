@@ -143,8 +143,12 @@ def drawmap(_canvas_: Canvas):
                     _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
                                          text='GHOST')
             elif ANONYMOUS:
-                _create_circle(
-                    _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[7], width=1)
+                if REVEALIMPOSTER and p.PlayerData.isImpostor:
+                    _create_circle(
+                        _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#00FF00", width=1)
+                else:
+                    _create_circle(
+                        _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[7], width=1)
             else:
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[p.PlayerData.colorId], width=1)

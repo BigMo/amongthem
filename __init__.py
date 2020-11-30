@@ -82,7 +82,7 @@ def drawmap(_canvas_: Canvas):
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
 
-    _canvas_.create_text(_canvas_.winfo_width() - 80, _canvas_.winfo_height() - 10, anchor=W, font="Arial",
+    _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 240, anchor=NE, font="Arial",
                          text=f'Speed: {SPEED}')
 
     if map:
@@ -204,7 +204,7 @@ def draw(_canvas_: Canvas):
 
     _canvas_.create_text(5, _canvas_.winfo_height() - 220,
                          anchor=NW, font="Arial", text=UI_TEXT)
-
+                         
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))
 

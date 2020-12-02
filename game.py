@@ -239,6 +239,16 @@ _fn_Transform_set_Position: ShellCode = x86.Assembler()\
     .assemble()\
     .addBuffer('pNewPosition', 12)
 
+_fn_PlayerTask_get_Location: ShellCode = x86.Assembler()\
+    .pushInt8(0)\
+    .pushInt32Operand('pTask')\
+    .movInt32ToEaxOperand('pPlayerTask_get_Location')\
+    .callEax()\
+    .addInt8ToEsp(0xC)\
+    .movEaxToAddrOperand('pTargetBuffer')\
+    .ret()\
+    .assemble()\
+    .addBuffer('pTargetBuffer', 12)
 
 class Game:
     def __init__(self):
@@ -505,6 +515,18 @@ class Game:
             'pTransform': pTransform,
             'pTransform_set_Position': self._gameAssemblyBase_ + DATA['OFFSETS']['Transform_set_Position']
         })
+
+
+    def getPlayerTaskLocation(self, pTransform: int) -> IVector2:
+
+        global _fn_PlayerTask_get_Location
+        self._injector_.call(_fn_PlayerTask_get_Location, {
+            'pTask': pTransform,
+            'pPlayerTask_get_Location': self._gameAssemblyBase_ + DATA['OFFSETS']['PlayerTask_get_Location']
+        })
+        result = readType(self._pm_, _fn_Component_get_Position.buffers['pTargetBuffer'].addr,
+                          DATA['STRUCTS']['Vector2'])
+        return result
 
     def _getPlayerControl_(self, addr: int) -> IPlayerControl:
         return readType(self._pm_, addr, DATA['STRUCTS']['PlayerControl'])

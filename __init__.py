@@ -52,6 +52,7 @@ SPEED = 2.0
 
 DEADPLAYERS = []
 
+
 def currentTpTarget():
     return GAME.allPlayers[TPTARGETPL] if GAME.allPlayers and TPTARGETPL < len(GAME.allPlayers) else None
 
@@ -73,6 +74,7 @@ def drawmap(_canvas_: Canvas):
     global SPEEDHACK
     global CLICKTP
     global SHOWHOTKEYS
+    global TASKPOS
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
     _heightOffset = 240 if SHOWHOTKEYS else 40
@@ -90,17 +92,17 @@ def drawmap(_canvas_: Canvas):
 [F6] - Walk path [{WP}]
 [F8] - Hide Hotkeys
 [F10] - Quit
-""".format(SH='ON' if SPEEDHACK else 'OFF', CT='ON' if CLICKTP else 'OFF', NC='ON' if NOCLIP else 'OFF',I='ON' if IMPOSTER else 'OFF', AM='ON' if ANONYMOUS else 'OFF', SG='ON' if SHOWGHOSTS else 'OFF', RI='ON' if REVEALIMPOSTER else 'OFF', WP='ON' if WALKPATH else 'OFF')
+""".format(SH='ON' if SPEEDHACK else 'OFF', CT='ON' if CLICKTP else 'OFF', NC='ON' if NOCLIP else 'OFF', I='ON' if IMPOSTER else 'OFF', AM='ON' if ANONYMOUS else 'OFF', SG='ON' if SHOWGHOSTS else 'OFF', RI='ON' if REVEALIMPOSTER else 'OFF', WP='ON' if WALKPATH else 'OFF')
 
     _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - _heightOffset, anchor=NE, font="Arial",
                          text=f'Speed: {SPEED}')
 
     if SHOWHOTKEYS:
         _canvas_.create_text(5, _canvas_.winfo_height() - _heightOffset,
-                         anchor=NW, font="Arial", text=UI_TEXT)
+                             anchor=NW, font="Arial", text=UI_TEXT)
     else:
         _canvas_.create_text(5, _canvas_.winfo_height() - _heightOffset,
-                         anchor=NW, font="Arial", text='Hotkeys:\n[F8] - Show Hotkeys')
+                             anchor=NW, font="Arial", text='Hotkeys:\n[F8] - Show Hotkeys')
 
     if map:
         size = (map['image'].width(), map['image'].height())
@@ -172,14 +174,12 @@ def drawmap(_canvas_: Canvas):
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
                                      text=f'{playerName}\n{"DEAD" if p.PlayerData.isDead else ""}')
 
-        # if GAME.localPlayer:
-        #     for t in GAME.localPlayer.Tasks:
-        #         room = next(filter(lambda r: r.SystemType == t.StartAt, GAME.shipRooms), None)
-        #         if room:
-        #             roomPos = GAME.getTransformPosition(room.pRoomArea)
-        #             drawpos = translateVec(roomPos)
-        #             _create_circle(
-        #                 _canvas_, drawpos[0], drawpos[1], 4, outline="#f11", fill='#0f0', width=1)
+        if GAME.localPlayer:
+            for tpos in TASKPOS:
+                drawpos = translateVec(tpos)
+                _create_circle(
+                    _canvas_, drawpos[0], drawpos[1], 4, outline="#f11", fill='#0f0', width=1)
+
 
 def getDeadPlayer(p):
     global DEADPLAYERS
@@ -229,7 +229,7 @@ def draw(_canvas_: Canvas):
         drawmap(_canvas_)
     except Exception as e:
         pass
-                         
+
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))
 
@@ -297,7 +297,7 @@ def hackerino():
         global IMPOSTER
         if GAME.localPlayer:
             if not GAME.localPlayer.PlayerData.isImpostor:
-                GAME.localPlayer.PlayerData.isImpostor = 1 
+                GAME.localPlayer.PlayerData.isImpostor = 1
                 IMPOSTER = True
             else:
                 GAME.localPlayer.PlayerData.isImpostor = 0
@@ -373,6 +373,26 @@ def hackerino():
         time.sleep(0.01)
 
 
+TASKPOS = []
+
+
+def updateTaskPos():
+    global TASKPOS
+
+    while True:
+        pos = []
+        if GAME.localPlayer and GAME.shipStatus and GAME.shipRooms and GAME.allPlayers:
+            for t in GAME.localPlayer.Tasks:
+                if not t.HasLocation or t.taskStep >= t.MaxStep:
+                    continue
+                room = next(filter(lambda r: r.SystemType ==
+                               t.StartAt, GAME.shipRooms), None)
+                if room:
+                   pos.append(GAME.getComponentPosition(room._addr))
+        TASKPOS = pos
+        time.sleep(0.1)
+
+
 def main():
     _quit = Hotkeys('f10', lambda e: os.kill(os.getpid(), signal.SIGTERM))
     print("Initializing Game...")
@@ -388,6 +408,8 @@ def main():
     print(f'UnityPlayer.dll: {hex(GAME.unityPlayerBase)}')
     hackThread = Thread(None, hackerino, 'hack')
     hackThread.start()
+    posThread = Thread(None, updateTaskPos, 'taskPos')
+    posThread.start()
 
     hackThread.join()
     drawthread.join()

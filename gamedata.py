@@ -9,7 +9,8 @@ DATA = {
         'PlayerControl_RpcSetHat': 0x6C8FC0,
         'PlayerControl_RpcSetPet': 0x6C9250,
         'PlayerControl_RpcSetSkin': 0x6C93E0,
-        'PlayerControl_RpcCompleteTask': 0x6C8AD0
+        'PlayerControl_RpcCompleteTask': 0x6C8AD0,
+        'PlayerTask_get_Location': 0x0e63230
     },
     'PATTERNS': {
         'PlayerControlsStatic': {
@@ -263,11 +264,11 @@ DATA = {
         },
         'PlainShipRoom': {
             "SystemType": {
-                "offset": 0x24,#12,
+                "offset": 12,
                 "unpack": "i"
             },
             "pRoomArea": {
-                "offset": 0x2C,#20,
+                "offset": 20,
                 "unpack": "i"
             }
         }

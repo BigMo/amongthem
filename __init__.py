@@ -172,6 +172,15 @@ def drawmap(_canvas_: Canvas):
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
                                      text=f'{playerName}\n{"DEAD" if p.PlayerData.isDead else ""}')
 
+        # if GAME.localPlayer:
+        #     for t in GAME.localPlayer.Tasks:
+        #         room = next(filter(lambda r: r.SystemType == t.StartAt, GAME.shipRooms), None)
+        #         if room:
+        #             roomPos = GAME.getTransformPosition(room.pRoomArea)
+        #             drawpos = translateVec(roomPos)
+        #             _create_circle(
+        #                 _canvas_, drawpos[0], drawpos[1], 4, outline="#f11", fill='#0f0', width=1)
+
 def getDeadPlayer(p):
     global DEADPLAYERS
     for deadp in DEADPLAYERS:
@@ -216,8 +225,10 @@ def draw(_canvas_: Canvas):
     _canvas_.delete('all')
     global MAPS
     global TPTARGETPL
-
-    drawmap(_canvas_)
+    try:
+        drawmap(_canvas_)
+    except Exception as e:
+        pass
                          
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))

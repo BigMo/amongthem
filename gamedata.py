@@ -263,11 +263,11 @@ DATA = {
         },
         'PlainShipRoom': {
             "SystemType": {
-                "offset": 12,
+                "offset": 0x24,#12,
                 "unpack": "i"
             },
             "pRoomArea": {
-                "offset": 20,
+                "offset": 0x2C,#20,
                 "unpack": "i"
             }
         }

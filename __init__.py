@@ -44,24 +44,13 @@ SHOWGHOSTS = True
 CLICKTP = False
 REVEALIMPOSTER = False
 WALKPATH = True
+IMPOSTER = False
+NOCLIP = False
+SPEEDHACK = False
+SHOWHOTKEYS = True
 SPEED = 2.0
 
 DEADPLAYERS = []
-
-UI_TEXT = """Hotkeys:
-[Shift] - Hold for Speedhack
-[Plus] - Increase Speed +0.5
-[Ctrl] - Hold for Click TP
-[Alt] - Noclip on/off
-[F1] - Impostor on/off
-[F2] - Complete all tasks
-[F3] - Anonymous Mode on/off
-[F4] - Show Ghosts on/off
-[F5] - Reveal Imposter
-[F6] - Walk path on/off
-[F10] - Quit
-"""
-
 
 def currentTpTarget():
     return GAME.allPlayers[TPTARGETPL] if GAME.allPlayers and TPTARGETPL < len(GAME.allPlayers) else None
@@ -79,18 +68,46 @@ def drawmap(_canvas_: Canvas):
     global SPEED
     global REVEALIMPOSTER
     global WALKPATH
+    global IMPOSTER
+    global NOCLIP
+    global SPEEDHACK
+    global CLICKTP
+    global SHOWHOTKEYS
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
+    _heightOffset = 240 if SHOWHOTKEYS else 40
 
-    _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - 240, anchor=NE, font="Arial",
+    UI_TEXT = """Hotkeys:
+[Shift] - Hold for Speedhack [{SH}]
+[Plus] - Increase Speed +0.5
+[Ctrl] - Hold for Click TP [{CT}]
+[Alt] - Noclip [{NC}]
+[F1] - Impostor [{I}]
+[F2] - Complete all tasks
+[F3] - Anonymous Mode [{AM}]
+[F4] - Show Ghosts [{SG}]
+[F5] - Reveal Imposter [{RI}]
+[F6] - Walk path [{WP}]
+[F8] - Hide Hotkeys
+[F10] - Quit
+""".format(SH='ON' if SPEEDHACK else 'OFF', CT='ON' if CLICKTP else 'OFF', NC='ON' if NOCLIP else 'OFF',I='ON' if IMPOSTER else 'OFF', AM='ON' if ANONYMOUS else 'OFF', SG='ON' if SHOWGHOSTS else 'OFF', RI='ON' if REVEALIMPOSTER else 'OFF', WP='ON' if WALKPATH else 'OFF')
+
+    _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - _heightOffset, anchor=NE, font="Arial",
                          text=f'Speed: {SPEED}')
+
+    if SHOWHOTKEYS:
+        _canvas_.create_text(5, _canvas_.winfo_height() - _heightOffset,
+                         anchor=NW, font="Arial", text=UI_TEXT)
+    else:
+        _canvas_.create_text(5, _canvas_.winfo_height() - _heightOffset,
+                         anchor=NW, font="Arial", text='Hotkeys:\n[F8] - Show Hotkeys')
 
     if map:
         size = (map['image'].width(), map['image'].height())
         scale = (map['image'].width(
         ) / map['size'][0], map['image'].height() / map['size'][1])
         if _canvas_.winfo_width() != size[0] or _canvas_.winfo_height() != size[1]:
-            _canvas_.config(width=size[0], height=size[1]+220)
+            _canvas_.config(width=size[0], height=size[1]+_heightOffset)
 
         center = map['center']
 
@@ -201,9 +218,6 @@ def draw(_canvas_: Canvas):
     global TPTARGETPL
 
     drawmap(_canvas_)
-
-    _canvas_.create_text(5, _canvas_.winfo_height() - 220,
-                         anchor=NW, font="Arial", text=UI_TEXT)
                          
     _canvas_.update_idletasks()
     _canvas_.after(10, draw, (_canvas_))
@@ -256,8 +270,10 @@ def hackerino():
     lastprint = time.time()
 
     def setSpeed(speed):
+        global SPEEDHACK
         if GAME.gameOptions:
             GAME.gameOptions.Speed = speed
+        SPEEDHACK = True if speed != 1.0 else False
 
     def cbCompleteTasks():
         if GAME.localPlayer and not GAME.localPlayer.PlayerData.isImpostor:
@@ -267,13 +283,25 @@ def hackerino():
                 GAME.rpcCompleteTask(_task)
 
     def cbToggleImpostor():
+        global IMPOSTER
         if GAME.localPlayer:
-            GAME.localPlayer.PlayerData.isImpostor = 1 if not GAME.localPlayer.PlayerData.isImpostor else 0
+            if not GAME.localPlayer.PlayerData.isImpostor:
+                GAME.localPlayer.PlayerData.isImpostor = 1 
+                IMPOSTER = True
+            else:
+                GAME.localPlayer.PlayerData.isImpostor = 0
+                IMPOSTER = False
 
     def cbToggleNoClip():
+        global NOCLIP
         _go = GAME.getGameObject(GAME.localPlayer._addr)
         _layer = GAME.getGameObjectLayer(_go)
-        _layer = 14 if _layer == 8 else 8
+        if _layer == 8:
+            _layer = 14
+            NOCLIP = True
+        else:
+            _layer = 8
+            NOCLIP = False
         GAME.setGameObjectLayer(_go, _layer)
 
     def cbAnonymousMode():
@@ -300,6 +328,10 @@ def hackerino():
         global WALKPATH
         WALKPATH = not WALKPATH
 
+    def cbSHOWHOTKEYS():
+        global SHOWHOTKEYS
+        SHOWHOTKEYS = not SHOWHOTKEYS
+
     _speed = Hotkeys('shift',
                      lambda e: setSpeed(SPEED),
                      lambda e: setSpeed(1.0))
@@ -316,6 +348,7 @@ def hackerino():
                        lambda e: cbClickTp(False))
     _revealImposter = Hotkeys('f5', lambda e: cbRevealImposter())
     _walkPath = Hotkeys('f6', lambda e: cbWalkPath())
+    _SHOWHOTKEYS = Hotkeys('f8', lambda e: cbSHOWHOTKEYS())
 
     while True:
         if not GAME.update():

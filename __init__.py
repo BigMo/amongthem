@@ -1,3 +1,4 @@
+import sys
 import ctypes
 import time
 import os
@@ -253,6 +254,11 @@ def loadImage(path: str, scale: float) -> ImageTk.PhotoImage:
     image = image.resize((int(image.width * scale), int(image.height * scale)))
     return ImageTk.PhotoImage(image)
 
+def killmepls():
+    global WINDOW
+    WINDOW.destroy()
+    os.kill(os.getpid(), signal.SIGTERM)
+    sys.exit(69) #noice
 
 def updateGraph():
     global WINDOW
@@ -266,9 +272,6 @@ def updateGraph():
             if pos.X != 0 and pos.Y != 0 and GAME.localPlayer:
                 GAME.setComponentPosition(GAME.localPlayer._addr, pos)
 
-    def on_closing():
-        WINDOW.destroy()
-        os.kill(os.getpid(), signal.SIGTERM)
 
     MAPS[0]['image'] = loadImage('./map0.png', 0.5)
     MAPS[1]['image'] = loadImage('./map1.png', 0.5)
@@ -282,7 +285,7 @@ def updateGraph():
     WINDOW.attributes('-topmost', True)
     WINDOW.attributes('-alpha', 0.6)
     WINDOW.wm_title('[amongthem] by Zat & itsEzz')
-    WINDOW.protocol("WM_DELETE_WINDOW", on_closing)
+    WINDOW.protocol("WM_DELETE_WINDOW", killmepls)
     WINDOW.mainloop()
 
 
@@ -378,6 +381,8 @@ def hackerino():
 
     while True:
         if not GAME.update():
+            if GAME.initialized and not ctypes.windll.user32.FindWindowW(0, 'Among Us'):
+                killmepls()
             time.sleep(1)
             continue
 

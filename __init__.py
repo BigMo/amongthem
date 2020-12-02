@@ -1,3 +1,4 @@
+import ctypes
 import time
 import os
 import signal
@@ -49,6 +50,7 @@ NOCLIP = False
 SPEEDHACK = False
 SHOWHOTKEYS = True
 SPEED = 2.0
+WINDOW = None
 
 DEADPLAYERS = []
 
@@ -75,6 +77,7 @@ def drawmap(_canvas_: Canvas):
     global CLICKTP
     global SHOWHOTKEYS
     global TASKPOS
+    global WINDOW
 
     map = MAPS[GAME.shipStatus.MapType] if GAME.shipStatus else None
     _heightOffset = 240 if SHOWHOTKEYS else 40
@@ -92,7 +95,15 @@ def drawmap(_canvas_: Canvas):
 [F6] - Walk path [{WP}]
 [F8] - Hide Hotkeys
 [F10] - Quit
-""".format(SH='ON' if SPEEDHACK else 'OFF', CT='ON' if CLICKTP else 'OFF', NC='ON' if NOCLIP else 'OFF', I='ON' if IMPOSTER else 'OFF', AM='ON' if ANONYMOUS else 'OFF', SG='ON' if SHOWGHOSTS else 'OFF', RI='ON' if REVEALIMPOSTER else 'OFF', WP='ON' if WALKPATH else 'OFF')
+""".format(
+        SH='ON' if SPEEDHACK else 'OFF',
+        CT='ON' if CLICKTP else 'OFF',
+        NC='ON' if NOCLIP else 'OFF',
+        I='ON' if IMPOSTER else 'OFF',
+        AM='ON' if ANONYMOUS else 'OFF',
+        SG='ON' if SHOWGHOSTS else 'OFF',
+        RI='ON' if REVEALIMPOSTER else 'OFF',
+        WP='ON' if WALKPATH else 'OFF')
 
     _canvas_.create_text(_canvas_.winfo_width() - 5, _canvas_.winfo_height() - _heightOffset, anchor=NE, font="Arial",
                          text=f'Speed: {SPEED}')
@@ -110,6 +121,9 @@ def drawmap(_canvas_: Canvas):
         ) / map['size'][0], map['image'].height() / map['size'][1])
         if _canvas_.winfo_width() != size[0] or _canvas_.winfo_height() != size[1]:
             _canvas_.config(width=size[0], height=size[1]+_heightOffset)
+            rect = GetWindowRectFromName('Among Us')
+            WINDOW.geometry(
+                f'{_canvas_.winfo_width()}x{_canvas_.winfo_height()}+{rect[0]-8}+{rect[1] + rect[3] - _canvas_.winfo_height() - 32}')
 
         center = map['center']
 
@@ -241,7 +255,8 @@ def loadImage(path: str, scale: float) -> ImageTk.PhotoImage:
 
 
 def updateGraph():
-    root = Tk()
+    global WINDOW
+    WINDOW = Tk()
     global MAPS
 
     def cbTpToClick(event):
@@ -252,23 +267,23 @@ def updateGraph():
                 GAME.setComponentPosition(GAME.localPlayer._addr, pos)
 
     def on_closing():
-        root.destroy()
+        WINDOW.destroy()
         os.kill(os.getpid(), signal.SIGTERM)
 
     MAPS[0]['image'] = loadImage('./map0.png', 0.5)
     MAPS[1]['image'] = loadImage('./map1.png', 0.5)
     MAPS[2]['image'] = loadImage('./map2.png', 0.5)
-    canvas = Canvas(root)
+    canvas = Canvas(WINDOW)
     canvas.bind("<Button-1>", cbTpToClick)
     canvas.grid()
     canvas.config(bg='white')
     draw(canvas)
-    root.lift()
-    root.attributes('-topmost', True)
-    root.attributes('-alpha', 0.6)
-    root.wm_title('[amongthem] by Zat & itsEzz')
-    root.protocol("WM_DELETE_WINDOW", on_closing)
-    root.mainloop()
+    WINDOW.lift()
+    WINDOW.attributes('-topmost', True)
+    WINDOW.attributes('-alpha', 0.6)
+    WINDOW.wm_title('[amongthem] by Zat & itsEzz')
+    WINDOW.protocol("WM_DELETE_WINDOW", on_closing)
+    WINDOW.mainloop()
 
 
 ZERO: StaticVector = StaticVector(0.0, 0.0)
@@ -386,11 +401,20 @@ def updateTaskPos():
                 if not t.HasLocation or t.taskStep >= t.MaxStep:
                     continue
                 room = next(filter(lambda r: r.SystemType ==
-                               t.StartAt, GAME.shipRooms), None)
+                                   t.StartAt, GAME.shipRooms), None)
                 if room:
-                   pos.append(GAME.getComponentPosition(room._addr))
+                    pos.append(GAME.getComponentPosition(room._addr))
         TASKPOS = pos
         time.sleep(0.1)
+
+
+def GetWindowRectFromName(name: str) -> tuple:
+    hwnd = ctypes.windll.user32.FindWindowW(0, name)
+    if not hwnd:
+        return
+    rect = ctypes.wintypes.RECT()
+    ctypes.windll.user32.GetWindowRect(hwnd, ctypes.pointer(rect))
+    return (rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
 
 
 def main():

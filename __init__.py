@@ -45,12 +45,12 @@ ANONYMOUS = True
 SHOWGHOSTS = True
 CLICKTP = False
 REVEALIMPOSTER = False
-WALKPATH = True
+WALKPATH = False
 IMPOSTER = False
 NOCLIP = False
 SPEEDHACK = False
 SHOWHOTKEYS = True
-SPEED = 2.0
+SPEED = 1.5
 WINDOW = None
 
 DEADPLAYERS = []
@@ -163,19 +163,17 @@ def drawmap(_canvas_: Canvas):
             drawpos = translateVec(pos)
 
             if REVEALIMPOSTER and p.PlayerData.isImpostor:
-                playerName = f'{p.Name} [IMP]'
+                playerName = f'[IMP] {p.Name}'
             if deadPlayer:
                 timediff = time.time() - deadPlayerObj.killTimer
                 if timediff < 40:
                     _create_circle(
                         _canvas_, drawposDead[0], drawposDead[1], 10, outline="#f11", fill="#f2ff00", width=1)
                     _canvas_.create_text(drawposDead[0] + 10, drawposDead[1], anchor=W, font="Arial",
-                                         text=f'KILLED\n{int(timediff)}s ago')
+                                         text=f'died\n{int(timediff)}s ago')
                 if timediff > 5 and drawposDead != drawpos and SHOWGHOSTS:
                     _create_circle(
-                        _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill="#000000", width=1)
-                    _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
-                                         text='GHOST')
+                        _canvas_, drawpos[0], drawpos[1], 10, outline="#f2ff00", fill="#000000", width=1)
             elif ANONYMOUS:
                 if REVEALIMPOSTER and p.PlayerData.isImpostor:
                     _create_circle(
@@ -187,7 +185,7 @@ def drawmap(_canvas_: Canvas):
                 _create_circle(
                     _canvas_, drawpos[0], drawpos[1], 10, outline="#f11", fill=COLORS[p.PlayerData.colorId], width=1)
                 _canvas_.create_text(drawpos[0] + 10, drawpos[1], anchor=W, font="Arial",
-                                     text=f'{playerName}\n{"DEAD" if p.PlayerData.isDead else ""}')
+                                     text=playerName)
 
         if GAME.localPlayer:
             for tpos in TASKPOS:
@@ -410,7 +408,7 @@ def updateTaskPos():
                 if room:
                     pos.append(GAME.getComponentPosition(room._addr))
         TASKPOS = pos
-        time.sleep(0.1)
+        time.sleep(1.5)
 
 
 def GetWindowRectFromName(name: str) -> tuple:

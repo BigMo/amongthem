@@ -10,7 +10,7 @@ from threading import Thread
 from tkinter import Tk, Canvas, W, NW, SW, SE, NE
 
 from pymem import Pymem, pattern
-import pymem
+import pymem, os
 
 from gamedata import DATA
 from gametypes import IPlainRoom
@@ -255,8 +255,7 @@ def loadImage(path: str, scale: float) -> ImageTk.PhotoImage:
 def killmepls():
     global WINDOW
     WINDOW.destroy()
-    os.kill(os.getpid(), signal.SIGTERM)
-    sys.exit(69) #noice
+    os._exit(1)
 
 def updateGraph():
     global WINDOW

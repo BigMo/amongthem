@@ -1,16 +1,16 @@
 DATA = {
     'OFFSETS': {
-        'Component_get_Transform': 0x40D4C0,
-        'Component_get_GameObject': 0x40D430,
-        'Transform_get_Position': 0x45A4C0,
-        'Transform_set_Position': 0x45A910,
-        'GameObject_get_Layer': 0x40F8C0,
-        'GameObject_set_Layer': 0x40F950,
-        'PlayerControl_RpcSetHat': 0x6C8FC0,
-        'PlayerControl_RpcSetPet': 0x6C9250,
-        'PlayerControl_RpcSetSkin': 0x6C93E0,
-        'PlayerControl_RpcCompleteTask': 0x6C8AD0,
-        'PlayerTask_get_Location': 0x0e63230
+        'Component_get_Transform': 0xba14F0,
+        'Component_get_GameObject': 0xba1460,
+        'Transform_get_Position': 0xab0ae0,
+        'Transform_set_Position': 0xab0f30,
+        'GameObject_get_Layer': 0xba38f0,
+        'GameObject_set_Layer': 0xba3980,
+        'PlayerControl_RpcSetHat': 0x6f97d0,
+        'PlayerControl_RpcSetPet': 0x6f9a60,
+        'PlayerControl_RpcSetSkin': 0x6f9bf0,
+        'PlayerControl_RpcCompleteTask': 0x6f92e0,
+        'PlayerTask_get_Location': 0xd15ae0
     },
     'PATTERNS': {
         'PlayerControlsStatic': {

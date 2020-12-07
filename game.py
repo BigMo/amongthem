@@ -11,9 +11,10 @@ from helpers import ItemHistory, Map, PointerChain
 from x86 import ShellCode, ShellCodeInjector
 from gametypes import *
 from gamedata import DATA
- 
-pPlayerControlStatic = PointerChain([0x193c4b4, 0x5c, 0])
-pShipStatusStatic = PointerChain([0x143C110, 0x5c, 0, 0]) # wtf where did that go
+
+pPlayerControlStatic = PointerChain([0x1be11cc, 0x5c, 0])  # 0x143C4B4?
+# wtf where did that go
+pShipStatusStatic = PointerChain([0x1be114c, 0x5c, 0, 0])
 # also, rooms were changed in update. gotta reverse that one again...
 
 
@@ -250,6 +251,7 @@ _fn_PlayerTask_get_Location: ShellCode = x86.Assembler()\
     .ret()\
     .assemble()\
     .addBuffer('pTargetBuffer', 12)
+
 
 class Game:
     def __init__(self):
@@ -516,7 +518,6 @@ class Game:
             'pTransform': pTransform,
             'pTransform_set_Position': self._gameAssemblyBase_ + DATA['OFFSETS']['Transform_set_Position']
         })
-
 
     def getPlayerTaskLocation(self, pTransform: int) -> IVector2:
 

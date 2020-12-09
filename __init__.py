@@ -10,7 +10,8 @@ from threading import Thread
 from tkinter import Tk, Canvas, W, NW, SW, SE, NE
 
 from pymem import Pymem, pattern
-import pymem, os
+import pymem
+import os
 
 from gamedata import DATA
 from gametypes import IPlainRoom
@@ -252,10 +253,12 @@ def loadImage(path: str, scale: float) -> ImageTk.PhotoImage:
     image = image.resize((int(image.width * scale), int(image.height * scale)))
     return ImageTk.PhotoImage(image)
 
+
 def killmepls():
     global WINDOW
     WINDOW.destroy()
     os._exit(1)
+
 
 def updateGraph():
     global WINDOW
@@ -268,7 +271,6 @@ def updateGraph():
             pos = translateVecBack(event)
             if pos.X != 0 and pos.Y != 0 and GAME.localPlayer:
                 GAME.setComponentPosition(GAME.localPlayer._addr, pos)
-
 
     MAPS[0]['image'] = loadImage('./map0.png', 0.5)
     MAPS[1]['image'] = loadImage('./map1.png', 0.5)

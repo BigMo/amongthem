@@ -12,10 +12,8 @@ from x86 import ShellCode, ShellCodeInjector
 from gametypes import *
 from gamedata import DATA
 
-pPlayerControlStatic = PointerChain([0x1be11cc, 0x5c, 0])  # 0x143C4B4?
-# wtf where did that go
-pShipStatusStatic = PointerChain([0x1be114c, 0x5c, 0, 0])
-# also, rooms were changed in update. gotta reverse that one again...
+pPlayerControlStatic = PointerChain([0x5c, 0])  # offset: 0x1be11cc
+pShipStatusStatic = PointerChain([0x5c, 0, 0])  # offset: 0x1be114c
 
 
 def calcTypeSize(_type: Dict[str, Any]) -> int:
@@ -252,10 +250,46 @@ _fn_PlayerTask_get_Location: ShellCode = x86.Assembler()\
     .assemble()\
     .addBuffer('pTargetBuffer', 12)
 
+_fn_il2cpp_domain_get_: ShellCode = x86.Assembler()\
+    .movInt32ToEaxOperand('pil2cpp_domain_get')\
+    .callEax()\
+    .movEaxToAddrOperand('pTargetBuffer')\
+    .ret()\
+    .assemble()\
+    .addBuffer('pTargetBuffer', 4)
+
+_fn_il2cpp_domain_assembly_open_: ShellCode = x86.Assembler()\
+    .pushInt32Operand('pAssemblyName')\
+    .pushInt32Operand('pDomain')\
+    .movInt32ToEaxOperand('pil2cpp_domain_assembly_open')\
+    .callEax()\
+    .addInt8ToEsp(0x8)\
+    .movEaxToAddrOperand('pTargetBuffer')\
+    .ret()\
+    .assemble()\
+    .addBuffer('pAssemblyName', 128)\
+    .addBuffer('pTargetBuffer', 4)
+
+_fn_il2cpp_class_from_name_: ShellCode = x86.Assembler()\
+    .pushInt32Operand('pClassName')\
+    .pushInt32Operand('pNamespace')\
+    .pushInt32Operand('pAssemblyImage')\
+    .movInt32ToEaxOperand('pil2cpp_class_from_name')\
+    .callEax()\
+    .addInt8ToEsp(0xC)\
+    .movEaxToAddrOperand('pTargetBuffer')\
+    .ret()\
+    .assemble()\
+    .addBuffer('pClassName', 128)\
+    .addBuffer('pNamespace', 128)\
+    .addBuffer('pTargetBuffer', 4)
+
 
 class Game:
     def __init__(self):
         self._pm_: Pymem = None
+        self._PlayerControl_class_ : int = None
+        self._ShipStatus_class_ : int = None
         self._gameAssemblyBase_: int = 0
         self._unityPlayerBase_: int = 0
         self._gameOptions_: IGameOptions = None
@@ -329,6 +363,9 @@ class Game:
                 self._injector_.prepareBuffers(_fn_PlayerControl_RpcSetSkin)
                 self._injector_.prepareBuffers(_fn_Transform_get_Position)
                 self._injector_.prepareBuffers(_fn_Transform_set_Position)
+                self._injector_.prepareBuffers(_fn_il2cpp_domain_get_)
+                self._injector_.prepareBuffers(_fn_il2cpp_domain_assembly_open_)
+                self._injector_.prepareBuffers(_fn_il2cpp_class_from_name_)
             except:
                 return False
         if self._gameAssemblyBase_ == 0:
@@ -341,6 +378,24 @@ class Game:
             try:
                 self._unityPlayerBase_ = pymem.process.module_from_name(
                     self._pm_.process_handle, 'UnityPlayer.dll').lpBaseOfDll
+            except:
+                return False
+        if self._PlayerControl_class_ == None:
+            try:
+                self._PlayerControl_class_ = self.getClassFromName(
+                    'Assembly-CSharp',
+                    '',
+                    DATA['CLASSES']['PlayerControl']
+                )
+            except:
+                return False
+        if self._ShipStatus_class_ == None:
+            try:
+                self._ShipStatus_class_ = self.getClassFromName(
+                    'Assembly-CSharp',
+                    '',
+                    DATA['CLASSES']['ShipStatus']
+                )
             except:
                 return False
         return True
@@ -358,7 +413,7 @@ class Game:
                 return False
 
             # ShipStatus + Rooms
-            self._shipStatus_ = self._getShipStatus_()
+            self._shipStatus_ = self._getShipStatusStatic_()
             if self._shipStatus_:
                 _arrType = DATA['STRUCTS']['Array']
                 _lengthOffset = _arrType['max_length']['offset']
@@ -568,12 +623,12 @@ class Game:
         except Exception as e:
             pass
 
-    def _getShipStatus_(self) -> IShipStatus:
-        addr = pShipStatusStatic.resolve(self._pm_, self._gameAssemblyBase_)
+    def _getShipStatusStatic_(self) -> IShipStatus:
+        addr = pShipStatusStatic.resolve(self._pm_, self._ShipStatus_class_)
         return readType(self._pm_, addr, DATA['STRUCTS']['ShipStatus'])
 
     def _getPlayerControlStatic_(self) -> IPlayerControlStatic:
-        addr = pPlayerControlStatic.resolve(self._pm_, self._gameAssemblyBase_)
+        addr = pPlayerControlStatic.resolve(self._pm_, self._PlayerControl_class_)
         return readType(self._pm_, addr, DATA['STRUCTS']['PlayerControlStatic'])
 
     def _readLocalPosAddr_(self, _addr: int) -> ILocalPos:
@@ -582,5 +637,51 @@ class Game:
     def _readLocalPosIdx_(self, _localPosBase: int, _idx: int) -> ILocalPos:
         return self._readLocalPosAddr_(_localPosBase + 0x100 * _idx)
 
+    def getClassFromName(self, assemblyName: str, namespace: str, className: str) -> int:
+        pDomain = self._il2cpp_domain_get_()
+        pAssembly = self._il2cpp_domain_assembly_open_(pDomain, assemblyName)
+        pClass = self._il2cpp_class_from_name_(pAssembly, namespace, className)
+        return pClass
+
+    def _il2cpp_domain_get_(self) -> int:
+        global _fn_il2cpp_domain_get_
+        self._injector_.call(_fn_il2cpp_domain_get_, {
+            'pil2cpp_domain_get': self._gameAssemblyBase_ + DATA['OFFSETS']['il2cpp_domain_get']
+        })
+        result = self._pm_.read_int(_fn_il2cpp_domain_get_.buffers['pTargetBuffer'].addr)
+        return result
+
+    def _il2cpp_domain_assembly_open_(self, domain: int, assemblyName: str) -> int:
+        global _fn_il2cpp_domain_assembly_open_
+        self._injector_.writeBufferString(
+            _fn_il2cpp_domain_assembly_open_.buffers['pAssemblyName'],
+            assemblyName)
+        self._injector_.call(_fn_il2cpp_domain_assembly_open_, {
+            'pAssemblyName': _fn_il2cpp_domain_assembly_open_.buffers['pAssemblyName'].addr,
+            'pDomain': domain,
+            'pil2cpp_domain_assembly_open': self._gameAssemblyBase_ + DATA['OFFSETS']['il2cpp_domain_assembly_open']
+        })
+        result = self._pm_.read_uint(
+            _fn_il2cpp_domain_assembly_open_.buffers['pTargetBuffer'].addr)
+        pAssemblyImage = self._pm_.read_uint(result)
+        return pAssemblyImage
+
+    def _il2cpp_class_from_name_(self, assemblyImage: int, namespace: str, className: str) -> int:
+        global _fn_il2cpp_class_from_name_
+        self._injector_.writeBufferString(
+            _fn_il2cpp_class_from_name_.buffers['pClassName'],
+            className)
+        self._injector_.writeBufferString(
+            _fn_il2cpp_class_from_name_.buffers['pNamespace'],
+            namespace)
+        self._injector_.call(_fn_il2cpp_class_from_name_, {
+            'pClassName': _fn_il2cpp_class_from_name_.buffers['pClassName'].addr,
+            'pNamespace': _fn_il2cpp_class_from_name_.buffers['pNamespace'].addr,
+            'pAssemblyImage': assemblyImage,
+            'pil2cpp_class_from_name': self._gameAssemblyBase_ + DATA['OFFSETS']['il2cpp_class_from_name']
+        })
+        result = self._pm_.read_uint(
+            _fn_il2cpp_class_from_name_.buffers['pTargetBuffer'].addr)
+        return result
 
 GAME: Game = Game()

@@ -1,6 +1,8 @@
 import ctypes
 from enum import Enum
+from logging import error
 import struct
+#import pefile
 from pymem import Pymem
 import pymem.ressources.kernel32
 import pymem.ressources.structure
@@ -311,7 +313,6 @@ class ShellCodeInjector:
                     buffer.addr = self.alloc(buffer._size_)
             code.updateCode(operandValues)
             # Write func to mem if neccessary
-            #print(str(code))
             if not code.mapped:
                 code.addr = self.alloc(len(code.code))
                 self._pm_.write_bytes(code.addr, code.code, len(code.code))
@@ -321,8 +322,13 @@ class ShellCodeInjector:
                 self._pm_.write_bytes(code.addr, code.code, len(code.code))
                 code.outdated = False
             # Execute function
-            #print(code)
             return self.execute(code.addr)
+
+    def writeBufferString(self, buffer: Buffer, text: str):
+        data = (text + '\0').encode(encoding='ascii')
+        if buffer.size < len(data):
+            raise Exception('Buffer too small')
+        self._pm_.write_bytes(buffer.addr, data, len(data))
 
 
 class Assembler:
@@ -480,15 +486,15 @@ class Assembler:
         return self._labelRef_(label, LabelRefType.Relative, 'B')
 
     def jumpNotZeroLabel(self, label) -> 'Assembler':
-        self._code_ += b'\x75' # jz [label]
+        self._code_ += b'\x75'  # jz [label]
         return self._labelRef_(label, LabelRefType.Relative, 'B')
 
     def jumpLessLabel(self, label) -> 'Assembler':
-        self._code_ += b'\x7C' # jl [label] -> is SF != OF
+        self._code_ += b'\x7C'  # jl [label] -> is SF != OF
         return self._labelRef_(label, LabelRefType.Relative, 'B')
 
     def jumpNotLessLabel(self, label) -> 'Assembler':
-        self._code_ += b'\x7D' # jnl [label] -> is SF == OF
+        self._code_ += b'\x7D'  # jnl [label] -> is SF == OF
         return self._labelRef_(label, LabelRefType.Relative, 'B')
 
     def _labelRef_(self, name: str, refType: LabelRefType, format='I') -> 'Assembler':
@@ -508,3 +514,47 @@ class Assembler:
         self._code_ = bytearray()
         self._operands_ = {}
         return shellCode
+
+
+# class RemoteTools:
+#     @staticmethod
+#     def getRemoteModule(pm: Pymem, moduleName: str) -> Tuple[int, int]:
+#         for module in pm.list_modules():
+#             if module.name.lower() == moduleName.lower():
+#                 return (module.lpBaseOfDll, module.SizeOfImage)
+#         return None
+
+#     _fn_get_proc_address_ = Assembler()\
+#         .pushInt32Operand('pProcName')\
+#         .pushInt32Operand('pModuleAddress')\
+#         .movInt32ToEaxOperand('pGetProcAddress')\
+#         .callEax()\
+#         .movEaxToAddrOperand('pTargetBuffer')\
+#         .ret()\
+#         .assemble()\
+#         .addBuffer('pTargetBuffer', 4)\
+#         .addBuffer('pProcName', 128)
+
+#     @staticmethod
+#     def getRemoteProcAddress(injector: ShellCodeInjector, pModule: int, procName: str) -> int:
+#         injector.prepareBuffers(RemoteTools._fn_get_proc_address_)
+#         remoteK32, size = RemoteTools.getRemoteModule(
+#             injector._pm_, 'kernel32.dll')
+#         blob = injector._pm_.read_bytes(remoteK32, size)
+
+#         pe = pefile.PE(data=blob)
+#         offset = next(filter(lambda exp: exp.name == 'GetProcAddress',
+#                              pe.DIRECTORY_ENTRY_EXPORT.symbols), None)
+
+#         pGetProcAddress = remoteK32 + offset  # 0x1f550 #offset
+#         injector.writeBufferString(
+#             RemoteTools._fn_get_proc_address_.buffers['pProcName'],
+#             procName
+#         )
+#         injector.call(RemoteTools._fn_get_proc_address_,
+#                       {
+#                           'pProcName': RemoteTools._fn_get_proc_address_.buffers['pProcName'].addr,
+#                           'pModuleAddress': pModule,
+#                           'pGetProcAddress': pGetProcAddress
+#                       })
+#         return injector._pm_.read_uint(RemoteTools._fn_get_proc_address_.buffers['pTargetBuffer'].addr)

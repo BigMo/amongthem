@@ -10,7 +10,10 @@ DATA = {
         'PlayerControl_RpcSetPet': 0xe48e10,
         'PlayerControl_RpcSetSkin': 0xe48fa0,
         'PlayerControl_RpcCompleteTask': 0xe48690,
-        'PlayerTask_get_Location': 0xd15ae0
+        'PlayerTask_get_Location': 0xd15ae0,
+        'il2cpp_domain_get': 0x8d230,
+        'il2cpp_domain_assembly_open': 0x8d220,
+        'il2cpp_class_from_name': 0x8cec0,
     },
     'PATTERNS': {
         'PlayerControlsStatic': {
@@ -308,5 +311,9 @@ DATA = {
             4: "UpperEngine",
             12: "Weapons",
         }
+    },
+    'CLASSES':{
+        'PlayerControl': 'BHHCHKFKPOE',
+        'ShipStatus': 'KEJLBMGIBBL'
     }
 }

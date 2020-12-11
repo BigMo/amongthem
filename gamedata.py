@@ -1,19 +1,19 @@
 DATA = {
     'OFFSETS': {
-        'Component_get_Transform': 0x8d33d0,
-        'Component_get_GameObject': 0x8d3340,
-        'Transform_get_Position': 0x890900,
-        'Transform_set_Position': 0x890d50,
-        'GameObject_get_Layer': 0x8d57e0,
-        'GameObject_set_Layer': 0x8d5870,
-        'PlayerControl_RpcSetHat': 0xe48b80,
-        'PlayerControl_RpcSetPet': 0xe48e10,
-        'PlayerControl_RpcSetSkin': 0xe48fa0,
-        'PlayerControl_RpcCompleteTask': 0xe48690,
-        'PlayerTask_get_Location': 0xd15ae0,
-        'il2cpp_domain_get': 0x8d230,
-        'il2cpp_domain_assembly_open': 0x8d220,
-        'il2cpp_class_from_name': 0x8cec0,
+        'Component_get_Transform': 0xc025a0,
+        'Component_get_GameObject': 0xc02510,
+        'Transform_get_Position': 0xb915c0,
+        'Transform_set_Position': 0xb91a10,
+        'GameObject_get_Layer': 0xc049b0,
+        'GameObject_set_Layer': 0xc04a40,
+        'PlayerControl_RpcSetHat': 0x8f0380,
+        'PlayerControl_RpcSetPet': 0x8f0610,
+        'PlayerControl_RpcSetSkin': 0x8f07a0,
+        'PlayerControl_RpcCompleteTask': 0x8efe90,
+        'PlayerTask_get_Location': 0x443340,
+        'il2cpp_domain_get': 0x1264c0,
+        'il2cpp_domain_assembly_open': 0x1264b0,
+        'il2cpp_class_from_name': 0x126150,
     },
     'PATTERNS': {
         'PlayerControlsStatic': {
@@ -313,7 +313,7 @@ DATA = {
         }
     },
     'CLASSES':{
-        'PlayerControl': 'BHHCHKFKPOE',
-        'ShipStatus': 'KEJLBMGIBBL'
+        'PlayerControl': 'FFGALNAPKCD',
+        'ShipStatus': 'HLBNNHFCNAJ'
     }
 }
